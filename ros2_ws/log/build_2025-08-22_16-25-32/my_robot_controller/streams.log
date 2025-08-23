@@ -1,0 +1,19 @@
+[0.348s] Invoking command in '/home/beast/code/ros2_ws/build/my_robot_controller': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\u:\W$ PYTHONPATH=/home/beast/code/ros2_ws/build/my_robot_controller/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/beast/code/ros2_ws/install/my_robot_controller/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/beast/code/ros2_ws/build/my_robot_controller/build --no-deps symlink_data --force
+[0.488s] running develop
+[0.570s] running egg_info
+[0.577s] writing my_robot_controller.egg-info/PKG-INFO
+[0.577s] writing dependency_links to my_robot_controller.egg-info/dependency_links.txt
+[0.578s] writing entry points to my_robot_controller.egg-info/entry_points.txt
+[0.578s] writing requirements to my_robot_controller.egg-info/requires.txt
+[0.578s] writing top-level names to my_robot_controller.egg-info/top_level.txt
+[0.593s] reading manifest file 'my_robot_controller.egg-info/SOURCES.txt'
+[0.593s] writing manifest file 'my_robot_controller.egg-info/SOURCES.txt'
+[0.602s] running build_ext
+[0.602s] Creating /home/beast/code/ros2_ws/install/my_robot_controller/lib/python3.12/site-packages/my-robot-controller.egg-link (link to .)
+[0.602s] Installing test_node script to /home/beast/code/ros2_ws/install/my_robot_controller/lib/my_robot_controller
+[0.602s] 
+[0.602s] Installed /home/beast/code/ros2_ws/build/my_robot_controller
+[0.603s] running symlink_data
+[0.603s] symbolically linking /home/beast/code/ros2_ws/build/my_robot_controller/resource/my_robot_controller -> /home/beast/code/ros2_ws/install/my_robot_controller/share/ament_index/resource_index/packages
+[0.603s] symbolically linking /home/beast/code/ros2_ws/build/my_robot_controller/package.xml -> /home/beast/code/ros2_ws/install/my_robot_controller/share/my_robot_controller
+[0.617s] Invoked command in '/home/beast/code/ros2_ws/build/my_robot_controller' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\u:\W$ PYTHONPATH=/home/beast/code/ros2_ws/build/my_robot_controller/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/beast/code/ros2_ws/install/my_robot_controller/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/beast/code/ros2_ws/build/my_robot_controller/build --no-deps symlink_data --force
