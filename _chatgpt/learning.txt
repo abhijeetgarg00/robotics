@@ -1,0 +1,8 @@
+# Find the package path
+pkg=$(ros2 pkg prefix ros2_control_demo_example_9)
+echo $pkg
+
+# See launch + config + description
+ls $pkg/share/ros2_control_demo_example_9/launch
+ls $pkg/share/ros2_control_demo_example_9/config  # controller YAMLs usually live here
+ls $pkg/share/ros2_control_demo_description/      # URDF/xacro, meshes, ros2_control tags

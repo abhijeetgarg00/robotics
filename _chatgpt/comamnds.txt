@@ -1,0 +1,52 @@
+
+this one works
+
+------------------------------------------------------------------------------
+
+
+# Create workspace folder and a src/ inside it
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws/src
+
+# Panda demo (MoveIt2 + RViz + fake ros2_control)
+git clone https://github.com/moveit/moveit_resources.git
+
+# RRBot demo (Gazebo + ros2_control)
+git clone https://github.com/ros-controls/ros2_control_demos.git
+
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -yr
+
+colcon build --symlink-install
+source install/setup.bash
+
+ros2 launch moveit_resources_panda_moveit_config demo.launch.py
+
+------------------------------------------------------------------------------
+
+
+Now further 
+
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_ws/install/setup.bash
+ros2 launch ros2_control_demo_example_9 rrbot_gazebo.launch.py
+
+--- 
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_ws/install/setup.bash
+
+# See controllers
+ros2 control list_controllers
+
+# Find the command topic (usually this shows up)
+ros2 topic list | grep forward
+
+# Send joint targets (2 joints)
+ros2 topic pub /forward_position_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.5, -0.5]}"
+
+---
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_ws/install/setup.bash
+ros2 launch ros2_control_demo_example_9 test_forward_position_controller.launch.py
+
+

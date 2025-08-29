@@ -1,0 +1,39 @@
+cd ~/ros2_ws/src/moveit_resources
+
+# --- panda_description: docs + duplicate expanded URDF ---
+rm -f panda_description/CHANGELOG.rst \
+      panda_description/README.md \
+      panda_description/LICENSE \
+      panda_description/urdf/panda.urdf
+
+# --- panda_moveit_config: docs ---
+rm -f panda_moveit_config/CHANGELOG.rst \
+      panda_moveit_config/README.md
+
+# --- Extra planners & alt IK you’re not using (keep OMPL + default kinematics) ---
+rm -f panda_moveit_config/config/chomp_planning.yaml \
+      panda_moveit_config/config/stomp_planning.yaml \
+      panda_moveit_config/config/pilz_industrial_motion_planner_planning.yaml \
+      panda_moveit_config/config/bio_ik_kinematics.yaml \
+      panda_moveit_config/config/trac_ik_kinematics.yaml
+
+# --- Sensor configs (not used in your prototype) ---
+rm -f panda_moveit_config/config/sensors_kinect_depthmap.yaml \
+      panda_moveit_config/config/sensors_kinect_pointcloud.yaml
+
+# --- RViz/launch extras (demo.launch.py + moveit.rviz are enough) ---
+rm -f panda_moveit_config/launch/moveit_empty.rviz \
+      panda_moveit_config/launch/moveit_rviz.launch.py
+
+# --- SRDF generator helper xacros (static panda.srdf already present) ---
+rm -f panda_moveit_config/config/hand.xacro \
+      panda_moveit_config/config/panda_arm.xacro
+
+
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -yr
+colcon build --symlink-install
+source install/setup.bash
+ros2 launch moveit_resources_panda_moveit_config demo.launch.py
+
+
