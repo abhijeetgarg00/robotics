@@ -1,0 +1,115 @@
+Phase 0 — Verify your base
+
+Panda MoveIt RViz demo still opens (fake controllers).
+
+RRBot Gazebo still opens and moves (real ros2_control).
+
+✔️ Pass if both still work.
+
+Phase 1 — Make a clean integration package
+
+    Create a new package (e.g., panda_gz_moveit) to hold:
+
+    a Panda URDF/Xacro wrapper,
+
+    controller config (YAML),
+
+    launch for Gazebo + controllers,
+
+    launch for MoveIt + RViz.
+
+    ✔️ Pass if it builds and shows up in ros2 pkg list.
+
+Phase 2 — Prepare Panda for Gazebo (ros2_control)
+
+    In your Panda URDF wrapper:
+
+    Include the Panda model from moveit_resources_panda_description.
+
+    Add ros2_control: hardware = gazebo_ros2_control GazeboSystem.
+
+    Declare transmissions for:
+
+    7 arm joints: panda_joint1 … panda_joint7
+
+    (optional) 2 finger joints: panda_finger_joint1, panda_finger_joint2
+
+    ✔️ Pass if your URDF expands without errors.
+
+Phase 3 — Define controllers
+
+Controller set you will load at runtime:
+
+joint_state_broadcaster
+
+joint_trajectory_controller for the 7 arm joints
+
+(optional) joint_trajectory_controller for the gripper fingers
+
+Ensure the joint lists exactly match Panda joint names.
+
+✔️ Pass if the controller config references the correct joints.
+
+Phase 4 — Gazebo bring-up
+
+Launch Gazebo, publish robot_description, spawn Panda, start ros2_control_node, then load + activate:
+
+joint_state_broadcaster
+
+panda_arm_controller
+
+(optional) panda_gripper_controller
+
+Checkpoints
+
+Robot is visible in Gazebo.
+
+ros2 control list_controllers shows your controllers active.
+
+ros2 control list_hardware_interfaces lists position command/state interfaces for Panda joints.
+
+✔️ Pass if all three checks succeed.
+
+Phase 5 — Switch MoveIt to real controllers
+
+Start MoveIt against the same Panda URDF you spawned in Gazebo.
+
+In MoveIt config:
+
+Disable fake controllers.
+
+Enable ros2_control integration (MoveIt’s simple controller manager).
+
+Map the MoveIt group panda_arm → your arm joint_trajectory_controller.
+
+(Optional) Map hand → your gripper controller.
+
+Start move_group and RViz (MotionPlanning plugin).
+
+✔️ Pass if RViz shows “Connected” and the Planning Scene matches Gazebo pose.
+
+Phase 6 — Plan & Execute (MoveIt → Gazebo)
+
+In RViz MotionPlanning:
+
+Set a joint-space goal (e.g., slightly different joint 2 & 4).
+
+Click Plan then Execute.
+
+Expectations
+
+Trajectory appears in RViz.
+
+Gazebo robot moves and settles at goal.
+
+No controller errors in terminal.
+
+✔️ Pass if trajectory executes in Gazebo smoothly.
+
+(Optional) Repeat with a small Cartesian motion in RViz to confirm end-to-end planning and execution.
+
+Phase 7 — CLI/Script sanity (optional)
+
+As a secondary check (outside RViz), send a tiny JointTrajectory to the arm controller and confirm Gazebo motion.
+
+✔️ Pass if arm moves and joint_states update consistently.
