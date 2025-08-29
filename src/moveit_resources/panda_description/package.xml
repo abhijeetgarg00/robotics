@@ -2,21 +2,23 @@
 <package format="3">
   <name>moveit_resources_panda_description</name>
   <version>3.1.1</version>
-  <description>panda Resources used for MoveIt testing</description>
+  <description>Robot description (URDF/Xacro + meshes) for Franka Panda used in MoveIt resources.</description>
 
-  <author email="isucan@willowgarage.edu">Ioan Sucan</author>
-  <author email="acorn@willowgarage.edu">Acorn Pooley</author>
-
-  <maintainer email="dave@dav.ee">Dave Coleman</maintainer>
-
+  <maintainer email="mike@picknik.ai">Mike Lautman</maintainer>
+  <author email="mike@picknik.ai">Mike Lautman</author>
   <license>BSD</license>
-  <url type="website">http://moveit.ros.org</url>
-  <url type="bugtracker">https://github.com/ros-planning/moveit-resources/issues</url>
-  <url type="repository">https://github.com/ros-planning/moveit-resources</url>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
+  <url type="website">http://moveit.ros.org/</url>
+  <url type="bugtracker">https://github.com/ros-planning/moveit_resources/issues</url>
+  <url type="repository">https://github.com/ros-planning/moveit_resources</url>
+
+  <!-- Python build tool -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- Run deps (xacro is commonly used with these descriptions) -->
+  <exec_depend>xacro</exec_depend>
 
   <export>
-      <build_type>ament_cmake</build_type>
+    <build_type>ament_python</build_type>
   </export>
 </package>
