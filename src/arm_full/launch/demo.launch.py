@@ -29,7 +29,7 @@ def generate_launch_description():
     )
 
     moveit_config = (
-        MoveItConfigsBuilder("moveit_resources_panda")
+        MoveItConfigsBuilder("arm_full",package_name="arm_full")
         .robot_description(
             file_path="config/panda.urdf.xacro",
             mappings={
