@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>arm_full</name>
+  <version>3.1.1</version>
+  <description>Robot description (URDF/Xacro + meshes) for Franka Panda used in MoveIt resources.</description>
+  <maintainer email="abhijeetgarg007@gmail.com">beast</maintainer>
+  <license>BSD</license>
+
+  <url type="website">http://moveit.ros.org/</url>
+  <url type="bugtracker">https://github.com/ros-planning/moveit_resources/issues</url>
+  <url type="repository">https://github.com/ros-planning/moveit_resources</url>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+ <!-- Build tool -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- Runtime deps -->
+  <exec_depend>ros2cli_common_extensions</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>position_controllers</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>topic_tools</exec_depend>
+  <exec_depend>moveit_ros_move_group</exec_depend>
+  <exec_depend>moveit_configs_utils</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <!-- optional, only if you use db:=True -->
+  <exec_depend>warehouse_ros_mongo</exec_depend>
+
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
