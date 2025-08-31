@@ -1,0 +1,12 @@
+
+cd ~/ros2_ws
+colcon build --symlink-install
+source install/setup.bash
+ros2 launch arm_full gazebo_moveit.launch.py ros2_control_hardware_type:=gz
+
+gz sim -r ~/ros2_ws/src/arm_full/worlds/empty.world
+
+
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_ws/install/setup.bash
+ros2 launch arm_full gazebo_moveit.launch.py ros2_control_hardware_type:=gz

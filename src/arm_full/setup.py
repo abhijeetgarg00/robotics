@@ -23,16 +23,19 @@ setup(
         (os.path.join('share', package_name), ['package.xml']),
 
         # Install from the source package folder explicitly:
-        (os.path.join('share', package_name, 'urdf'),       files_under('arm_full/urdf')),
-        (os.path.join('share', package_name, 'meshes/visual'),   files_under('arm_full/meshes/visual')),
-        (os.path.join('share', package_name, 'meshes/collision'), files_under('arm_full/meshes/collision')),
+        (os.path.join('share', package_name, 'urdf'),       files_under('urdf')),
+        (os.path.join('share', package_name, 'meshes/visual'),   files_under('meshes/visual')),
+        (os.path.join('share', package_name, 'meshes/collision'), files_under('meshes/collision')),
 
         # launch + rviz
-        (os.path.join('share', package_name, 'launch'), glob('arm_full/launch/*.py')),
-        (os.path.join('share', package_name, 'launch'), glob('arm_full/launch/*.rviz')),
+        (os.path.join('share', package_name, 'launch'), files_under('launch')),
+        
 
         # configs (yaml/xacro/srdf)
-        (os.path.join('share', package_name, 'config'), files_under('arm_full/config')),
+        (os.path.join('share', package_name, 'config'), files_under('config')),
+
+        # ✅ add this for Gazebo worlds
+        (os.path.join('share', package_name, 'worlds'), files_under('worlds')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
