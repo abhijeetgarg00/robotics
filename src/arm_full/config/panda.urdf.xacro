@@ -14,4 +14,15 @@
                             initial_positions_file="$(arg initial_positions_file)"
                             ros2_control_hardware_type="$(arg ros2_control_hardware_type)"/>
     <xacro:panda_hand_ros2_control name="PandaHandFakeSystem" ros2_control_hardware_type="$(arg ros2_control_hardware_type)"/>
+    <gazebo>
+        <plugin filename="libgz_ros2_control-system.so"
+                name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+            <!-- point to your controllers yaml -->
+            <parameters>$(find arm_full)/config/ros2_controllers.yaml</parameters>
+
+            <!-- hold joints at their commanded positions even when idle -->
+            <hold_joints>true</hold_joints>
+        </plugin>
+    </gazebo>
+
 </robot>

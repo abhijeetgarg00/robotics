@@ -6,15 +6,13 @@
 
         <ros2_control name="${sys_name}" type="system">
             <hardware>
-              <!-- If launched with: ros2_control_hardware_type:=gz -->
-              <xacro:if value="${ros2_control_hardware_type == 'gz'}">
-                <plugin>gz_ros2_control/GazeboSystem</plugin>
-              </xacro:if>
-
-              <!-- Otherwise stay on fake hardware -->
-              <xacro:unless value="${ros2_control_hardware_type == 'gz'}">
-                <plugin>mock_components/GenericSystem</plugin>
-              </xacro:unless>
+                <!-- If launched with: ros2_control_hardware_type:=gz -->
+                <xacro:if value="${ros2_control_hardware_type == 'gz'}">
+                  <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+                </xacro:if>
+                <xacro:unless value="${ros2_control_hardware_type == 'gz'}">
+                  <plugin>mock_components/GenericSystem</plugin>
+                </xacro:unless>
             </hardware>
             <joint name="panda_joint1">
                 <command_interface name="position"/>

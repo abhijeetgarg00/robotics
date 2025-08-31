@@ -4,12 +4,13 @@
     <xacro:macro name="panda_hand_ros2_control" params="name ros2_control_hardware_type">
         <ros2_control name="${name}" type="system">
             <hardware>
-            <xacro:if value="${ros2_control_hardware_type == 'gz'}">
-                <plugin>gz_ros2_control/GazeboSystem</plugin>
-            </xacro:if>
-            <xacro:unless value="${ros2_control_hardware_type == 'gz'}">
+                <!-- If launched with: ros2_control_hardware_type:=gz -->
+                <xacro:if value="${ros2_control_hardware_type == 'gz'}">
+                <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+                </xacro:if>
+                <xacro:unless value="${ros2_control_hardware_type == 'gz'}">
                 <plugin>mock_components/GenericSystem</plugin>
-            </xacro:unless>
+                </xacro:unless>
             </hardware>
             <joint name="panda_finger_joint1">
                 <command_interface name="position" />
