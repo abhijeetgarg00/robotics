@@ -136,6 +136,17 @@ def generate_launch_description():
         condition=IfCondition(use_gz),
     )
 
+    clock_bridge = Node(
+    package="ros_gz_bridge",
+    executable="parameter_bridge",
+    name="gz_clock_bridge",
+    # Use your actual world name here instead of 'default' if different
+    arguments=["/world/empty/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"],
+    remappings=[("/world/empty/clock", "/clock")],
+    output="screen",
+    condition=IfCondition(use_gz),
+)
+
     spawn_entity = Node(
         package="ros_gz_sim",
         executable="create",
@@ -204,6 +215,7 @@ def generate_launch_description():
             panda_hand_controller_spawner_fake,
             # gazebo-mode chain
             gz_sim,
+            clock_bridge,
             spawn_entity,
             joint_state_broadcaster_spawner_gz,
             panda_arm_controller_spawner_gz,
