@@ -1,3 +1,4 @@
+# arm_full/launch/gazebo_moveit.launch.py
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess
@@ -7,6 +8,9 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
 from moveit_configs_utils import MoveItConfigsBuilder
+
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 
 def generate_launch_description():
@@ -44,7 +48,7 @@ def generate_launch_description():
         package="moveit_ros_move_group",
         executable="move_group",
         output="screen",
-        parameters=[moveit_config.to_dict()],
+        parameters=[{"use_sim_time": True},moveit_config.to_dict()],
         arguments=["--ros-args", "--log-level", "info"],
     )
 
@@ -61,28 +65,31 @@ def generate_launch_description():
             moveit_config.planning_pipelines,
             moveit_config.robot_description_kinematics,
             moveit_config.joint_limits,
+            {"use_sim_time": True},
         ],
     )
 
-    # --- TF & state publisher ---
-    static_tf_node = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        name="static_transform_publisher",
-        output="log",
-        arguments=["0", "0", "0", "0", "0", "0", "world", "panda_link0"],
-    )
+    # # --- TF & state publisher ---
+    # static_tf_node = Node(
+    #     package="tf2_ros",
+    #     executable="static_transform_publisher",
+    #     name="static_transform_publisher",
+    #     output="log",
+    #     arguments=["0", "0", "0", "0", "0", "0", "world", "panda_link0"],
+    # )
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
         name="robot_state_publisher",
         output="both",
-        parameters=[moveit_config.robot_description],
+        parameters=[{"use_sim_time": True},moveit_config.robot_description],
     )
 
     # --- Common paths ---
-    ros2_controllers_path = os.path.join(get_package_share_directory("arm_full"), "config", "ros2_controllers.yaml")
+    ros2_controllers_path = os.path.join(
+        get_package_share_directory("arm_full"), "config", "ros2_controllers.yaml"
+    )
     world_path = PathJoinSubstitution([FindPackageShare("arm_full"), "worlds", "empty.world"])
 
     # ---------------------------
@@ -100,33 +107,35 @@ def generate_launch_description():
     joint_state_broadcaster_spawner_fake = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster", "-c", "/controller_manager"],
+        arguments=["joint_state_broadcaster", "-c", "/controller_manager", "--param-file", ros2_controllers_path],
         condition=IfCondition(use_fake),
     )
     panda_arm_controller_spawner_fake = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["panda_arm_controller", "-c", "/controller_manager"],
+        arguments=["panda_arm_controller", "-c", "/controller_manager", "--param-file", ros2_controllers_path],
         condition=IfCondition(use_fake),
     )
     panda_hand_controller_spawner_fake = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["panda_hand_controller", "-c", "/controller_manager"],
+        arguments=["panda_hand_controller", "-c", "/controller_manager", "--param-file", ros2_controllers_path],
         condition=IfCondition(use_fake),
     )
 
     # ---------------------------
     # Gazebo mode
     # ---------------------------
-    # Start Gazebo via the 'gz' CLI (there is no 'gz_sim' ROS node)
-    gz_sim = ExecuteProcess(
-        cmd=["gz", "sim", "-r", world_path],
-        output="screen",
+    gz_sim = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare("ros_gz_sim"), "launch", "gz_sim.launch.py"])
+        ),
+        launch_arguments={
+            "gz_args": ["-r ", world_path]  # <-- no str()
+        }.items(),
         condition=IfCondition(use_gz),
     )
 
-    # Spawn the robot into Gazebo from /robot_description (published by MoveIt config)
     spawn_entity = Node(
         package="ros_gz_sim",
         executable="create",
@@ -135,28 +144,37 @@ def generate_launch_description():
         condition=IfCondition(use_gz),
     )
 
-    # In Gazebo mode the controller manager lives under /panda/controller_manager.
-    # We pass controller params via --param-file.
     joint_state_broadcaster_spawner_gz = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster", "-c", "/panda/controller_manager", "--param-file", ros2_controllers_path],
-        condition=IfCondition(use_gz),
-    )
-    panda_arm_controller_spawner_gz = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["panda_arm_controller", "-c", "/panda/controller_manager", "--param-file", ros2_controllers_path],
-        condition=IfCondition(use_gz),
-    )
-    panda_hand_controller_spawner_gz = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["panda_hand_controller", "-c", "/panda/controller_manager", "--param-file", ros2_controllers_path],
+        arguments=[
+            "joint_state_broadcaster", "-c", "/controller_manager",
+            "--param-file", ros2_controllers_path
+        ],
         condition=IfCondition(use_gz),
     )
 
-    # --- Optional DB (unchanged) ---
+    panda_arm_controller_spawner_gz = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "panda_arm_controller", "-c", "/controller_manager",
+            "--param-file", ros2_controllers_path
+        ],
+        condition=IfCondition(use_gz),
+    )
+
+    panda_hand_controller_spawner_gz = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "panda_hand_controller", "-c", "/controller_manager",
+            "--param-file", ros2_controllers_path
+        ],
+        condition=IfCondition(use_gz),
+    )
+
+    # --- Optional DB ---
     db_config = LaunchConfiguration("db")
     mongodb_server_node = Node(
         package="warehouse_ros_mongo",
@@ -172,30 +190,24 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            # args
             rviz_config_arg,
             db_arg,
             ros2_control_hardware_type,
-
-            # core visualization & planning
             rviz_node,
-            static_tf_node,
+            #static_tf_node,
             robot_state_publisher,
             move_group_node,
-
             # fake-mode chain
             ros2_control_node_fake,
             joint_state_broadcaster_spawner_fake,
             panda_arm_controller_spawner_fake,
             panda_hand_controller_spawner_fake,
-
             # gazebo-mode chain
             gz_sim,
             spawn_entity,
             joint_state_broadcaster_spawner_gz,
             panda_arm_controller_spawner_gz,
             panda_hand_controller_spawner_gz,
-
             # optional db
             mongodb_server_node,
         ]
