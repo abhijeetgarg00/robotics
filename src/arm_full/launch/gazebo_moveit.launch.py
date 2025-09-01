@@ -11,9 +11,27 @@ from moveit_configs_utils import MoveItConfigsBuilder
 
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import SetEnvironmentVariable
+from launch.substitutions import EnvironmentVariable 
 
 
 def generate_launch_description():
+
+
+    models_dir = PathJoinSubstitution([FindPackageShare("arm_full"), "models"])
+
+
+    set_gz_path = SetEnvironmentVariable(
+        name="GZ_SIM_RESOURCE_PATH",
+        value=[
+            EnvironmentVariable("GZ_SIM_RESOURCE_PATH", default_value=""),
+            os.pathsep,
+            models_dir,                              # <-- point directly at .../arm_full/models
+            os.pathsep,
+            FindPackageShare("arm_full"),            # (optional) also add the package root
+        ],
+    )
+
     # Mode switches
     use_gz = PythonExpression(["'", LaunchConfiguration("ros2_control_hardware_type"), "' == 'gz'"])
     use_fake = PythonExpression(["'", LaunchConfiguration("ros2_control_hardware_type"), "' != 'gz'"])
@@ -204,6 +222,7 @@ def generate_launch_description():
             rviz_config_arg,
             db_arg,
             ros2_control_hardware_type,
+            set_gz_path,
             rviz_node,
             #static_tf_node,
             robot_state_publisher,

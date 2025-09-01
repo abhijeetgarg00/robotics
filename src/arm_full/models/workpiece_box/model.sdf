@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="workpiece_box">
+    <static>false</static>
+    <pose>0.5 0 0.6 0 0 0</pose> <!-- start a bit above ground -->
+    <link name="link">
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.0041667</ixx>
+          <iyy>0.0041667</iyy>
+          <izz>0.0066667</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <collision name="collision">
+        <geometry>
+          <box><size>0.20 0.20 0.10</size></box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>1.0</mu>     <!-- friction in first direction -->
+              <mu2>1.0</mu2>   <!-- friction in second direction -->
+            </ode>
+          </friction>
+          <contact>
+            <ode>
+              <kp>1e5</kp>   <!-- contact stiffness -->
+              <kd>1.0</kd>   <!-- damping -->
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <box><size>0.20 0.20 0.10</size></box>
+        </geometry>
+        <material>
+          <ambient>0.2 0.4 0.8 1</ambient>
+          <diffuse>0.2 0.4 0.8 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
