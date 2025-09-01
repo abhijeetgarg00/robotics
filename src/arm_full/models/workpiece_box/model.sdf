@@ -1,46 +1,85 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <sdf version="1.7">
   <model name="workpiece_box">
     <static>false</static>
-    <pose>0.5 0 0.6 0 0 0</pose> <!-- start a bit above ground -->
+    <!-- spawn a bit above the floor; adjust as you like -->
+    <pose>0.5 0 0.6 0 0 0</pose>
+
     <link name="link">
+      <!-- Simple inertia; close enough for grasp testing -->
       <inertial>
-        <mass>1.0</mass>
+        <mass>1.2</mass>
         <inertia>
-          <ixx>0.0041667</ixx>
-          <iyy>0.0041667</iyy>
-          <izz>0.0066667</izz>
+          <!-- approx for 0.20x0.20x0.10 box (+ small notch) -->
+          <ixx>0.0048</ixx>
+          <iyy>0.0048</iyy>
+          <izz>0.0072</izz>
           <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
         </inertia>
       </inertial>
 
-      <collision name="collision">
+      <!-- MAIN BOX (200x200x100 mm) -->
+      <collision name="box_collision">
+        <!-- centered at the link frame -->
+        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box><size>0.20 0.20 0.10</size></box>
         </geometry>
         <surface>
           <friction>
             <ode>
-              <mu>1.0</mu>     <!-- friction in first direction -->
-              <mu2>1.0</mu2>   <!-- friction in second direction -->
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
             </ode>
           </friction>
           <contact>
-            <ode>
-              <kp>1e5</kp>   <!-- contact stiffness -->
-              <kd>1.0</kd>   <!-- damping -->
-            </ode>
+            <ode><kp>1e5</kp><kd>1.0</kd></ode>
           </contact>
         </surface>
       </collision>
 
-      <visual name="visual">
+      <visual name="box_visual">
+        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box><size>0.20 0.20 0.10</size></box>
         </geometry>
         <material>
           <ambient>0.2 0.4 0.8 1</ambient>
           <diffuse>0.2 0.4 0.8 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- TOP NOTCH / PEG (30x50x60 mm) -->
+      <!-- Sits on the center of the top face. 
+           The top face of the box is at z=+0.05, so we place the notch 
+           so its base is exactly on that face: half notch height is 0.03 -> center at 0.05+0.03 = 0.08 -->
+      <collision name="notch_collision">
+        <pose>0 0 0.08 0 0 0</pose>
+        <geometry>
+          <box><size>0.03 0.05 0.06</size></box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <!-- Make the notch “grippy” for the fingers -->
+              <mu>2.0</mu>
+              <mu2>2.0</mu2>
+            </ode>
+          </friction>
+          <contact>
+            <ode><kp>1e5</kp><kd>1.0</kd></ode>
+          </contact>
+        </surface>
+      </collision>
+
+      <visual name="notch_visual">
+        <pose>0 0 0.08 0 0 0</pose>
+        <geometry>
+          <box><size>0.03 0.05 0.06</size></box>
+        </geometry>
+        <material>
+          <ambient>0.1 0.1 0.1 1</ambient>
+          <diffuse>0.12 0.12 0.12 1</diffuse>
         </material>
       </visual>
     </link>
