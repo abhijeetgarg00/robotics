@@ -6,3 +6,7 @@ log/
 .vscode/browse.vc.db-wal
 .vscode/c_cpp_properties.json
 .vscode/settings.json
+src/arm_full/arm_full/__pycache__/__init__.cpython-312.pyc
+.gitignore
+src/arm_full/arm_full/nodes/__pycache__/__init__.cpython-312.pyc
+src/arm_full/arm_full/nodes/__pycache__/gripper_open_close.cpython-312.pyc
