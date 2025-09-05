@@ -1,0 +1,25 @@
+# 1. Go to your ROS2 workspace
+cd ~/ros2_ws/src
+
+# 2. Clone the MoveIt Task Constructor repo (ros2 branch)
+git clone -b ros2 https://github.com/moveit/moveit_task_constructor.git
+
+# 3. Go back to workspace root
+cd ~/ros2_ws
+
+# 4. Install dependencies
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y
+
+# 5. Build MTC (and bundled dependencies like rviz_marker_tools)
+colcon build --packages-up-to moveit_task_constructor_visualization \
+  --cmake-args -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
+
+# 6. Source the workspace
+source ~/ros2_ws/install/setup.bash
+
+# 7. Test the Python bindings
+python3 - <<'PY'
+from moveit.task_constructor import core, stages
+print("MTC Python bindings loaded ✅")
+PY

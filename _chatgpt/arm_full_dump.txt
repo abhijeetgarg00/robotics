@@ -1,3 +1,233 @@
+/home/beast/ros2_ws/src/arm_full/src/gripper_open_close.cpp
+#include <chrono>
+#include <map>
+#include <rclcpp/rclcpp.hpp>
+#include <moveit/move_group_interface/move_group_interface.h>  // .h is fine too
+
+int main(int argc, char** argv)
+{
+  rclcpp::init(argc, argv);
+  auto node = rclcpp::Node::make_shared("gripper_open_close");
+
+  moveit::planning_interface::MoveGroupInterface gripper(node, "hand");
+
+  std::map<std::string, double> target_open{
+      {"panda_finger_joint1", 0.035},
+      {"panda_finger_joint2", 0.035}};
+  gripper.setJointValueTarget(target_open);
+  gripper.move();
+
+  rclcpp::sleep_for(std::chrono::seconds(2));
+
+  std::map<std::string, double> target_close{
+      {"panda_finger_joint1", 0.0},
+      {"panda_finger_joint2", 0.0}};
+  gripper.setJointValueTarget(target_close);
+  gripper.move();
+
+  rclcpp::shutdown();
+  return 0;
+}
+
+/home/beast/ros2_ws/src/arm_full/src/mtc_pick_box.cpp
+#include <rclcpp/rclcpp.hpp>
+
+#include <moveit/task_constructor/task.h>
+#include <moveit/task_constructor/stages/current_state.h>
+#include <moveit/task_constructor/stages/move_to.h>
+#include <moveit/task_constructor/stages/move_relative.h>
+#include <moveit/task_constructor/stages/modify_planning_scene.h>
+#include <moveit/task_constructor/solvers/pipeline_planner.h>
+#include <moveit/task_constructor/solvers/cartesian_path.h>
+
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <moveit_msgs/msg/collision_object.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <shape_msgs/msg/solid_primitive.hpp>
+
+using moveit::task_constructor::Task;
+namespace stages  = moveit::task_constructor::stages;
+namespace solvers = moveit::task_constructor::solvers;
+
+static const std::string ARM_GROUP = "panda_arm";
+static const std::string HAND_GROUP = "hand";
+static const std::string EEF_LINK   = "panda_hand";
+static const std::string OBJECT_ID  = "workpiece_box";
+
+int main(int argc, char** argv)
+{
+  rclcpp::init(argc, argv);
+  auto node = rclcpp::Node::make_shared("mtc_pick_box");
+
+  // Allow overriding object pose (defaults match your SDF center @ z=0.60)
+  const double obj_x = node->declare_parameter("box_x", 0.50);
+  const double obj_y = node->declare_parameter("box_y", 0.00);
+  const double obj_z = node->declare_parameter("box_z", 0.60);
+
+  // --------------------------------------------------
+  // Add the box to the PlanningScene (simple 20x20x10 cm)
+  // --------------------------------------------------
+  moveit::planning_interface::PlanningSceneInterface psi;
+
+  moveit_msgs::msg::CollisionObject box;
+  box.header.frame_id = "world";
+  box.id = OBJECT_ID;
+
+  shape_msgs::msg::SolidPrimitive prim;
+  prim.type = shape_msgs::msg::SolidPrimitive::BOX;
+  prim.dimensions.resize(3);
+  prim.dimensions[shape_msgs::msg::SolidPrimitive::BOX_X] = 0.20;
+  prim.dimensions[shape_msgs::msg::SolidPrimitive::BOX_Y] = 0.20;
+  prim.dimensions[shape_msgs::msg::SolidPrimitive::BOX_Z] = 0.10;
+
+  geometry_msgs::msg::Pose box_pose;
+  box_pose.position.x = obj_x;
+  box_pose.position.y = obj_y;
+  // place so the base touches z = obj_z - 0.05
+  box_pose.position.z = obj_z - 0.10 / 2.0;
+  box_pose.orientation.w = 1.0;
+
+  box.primitives.push_back(prim);
+  box.primitive_poses.push_back(box_pose);
+  box.operation = box.ADD;
+
+  psi.applyCollisionObject(box);
+
+  // --------------------------------------------------
+  // Build MTC Task
+  // --------------------------------------------------
+  Task task("pick_box");
+  task.loadRobotModel(node);
+  task.setProperty("group", ARM_GROUP);
+  task.setProperty("eef", HAND_GROUP);
+  task.setProperty("ik_frame", EEF_LINK);
+
+  // Solvers
+  auto pipeline = std::make_shared<solvers::PipelinePlanner>(node);
+  pipeline->setPlannerId("ompl", "RRTConnectkConfigDefault");
+
+  auto cartesian = std::make_shared<solvers::CartesianPath>();
+  cartesian->setMaxVelocityScalingFactor(0.2);
+  cartesian->setMaxAccelerationScalingFactor(0.2);
+  cartesian->setStepSize(0.002);
+
+  // 0) Current state
+  task.add(std::make_unique<stages::CurrentState>("current"));
+
+  // 1) Allow contact between EEF and object while grasping
+  {
+    auto allow = std::make_unique<stages::ModifyPlanningScene>("allow eef-object contact");
+    allow->allowCollisions(OBJECT_ID, { EEF_LINK }, true);
+    task.add(std::move(allow));
+  }
+
+  // 2) Open gripper (SRDF group_state "open")
+  {
+    auto open = std::make_unique<stages::MoveTo>("open hand", pipeline);
+    open->setGroup(HAND_GROUP);
+    open->setGoal("open");
+    task.add(std::move(open));
+  }
+
+  // 3) Move to pregrasp pose
+  {
+    geometry_msgs::msg::PoseStamped pre;
+    pre.header.frame_id = "world";
+    pre.pose.position.x = obj_x + 0.15;   // 15 cm in front of box
+    pre.pose.position.y = obj_y;
+    pre.pose.position.z = obj_z;          // level with box center
+
+    // RPY(0,0,pi) -> (0,0,1,0). Fingers close along +/-Y.
+    pre.pose.orientation.x = 0.0;
+    pre.pose.orientation.y = 0.0;
+    pre.pose.orientation.z = 1.0;
+    pre.pose.orientation.w = 0.0;
+
+    auto move_pre = std::make_unique<stages::MoveTo>("move to pregrasp", pipeline);
+    move_pre->setGroup(ARM_GROUP);
+    move_pre->setIKFrame(EEF_LINK);
+    move_pre->setGoal(pre);
+    task.add(std::move(move_pre));
+  }
+
+  // 4) Cartesian approach along -X
+  {
+    auto approach = std::make_unique<stages::MoveRelative>("approach", cartesian);
+    approach->setGroup(ARM_GROUP);
+    approach->setIKFrame(EEF_LINK);
+
+    geometry_msgs::msg::Vector3Stamped dir;
+    dir.header.frame_id = "world";
+    dir.vector.x = -1.0; dir.vector.y = 0.0; dir.vector.z = 0.0;
+    approach->setDirection(dir);
+
+    // No setDistance() in your API → use properties
+    approach->properties().set("min_distance", 0.08);
+    approach->properties().set("max_distance", 0.12);
+    task.add(std::move(approach));
+  }
+
+  // 5) Close gripper
+  {
+    auto close = std::make_unique<stages::MoveTo>("close hand", pipeline);
+    close->setGroup(HAND_GROUP);
+    close->setGoal("close");
+    task.add(std::move(close));
+  }
+
+  // 6) Attach object to the hand
+  {
+    auto attach = std::make_unique<stages::ModifyPlanningScene>("attach");
+    attach->attachObject(OBJECT_ID, EEF_LINK);
+    task.add(std::move(attach));
+  }
+
+  // 7) Lift along +Z
+  {
+    auto lift = std::make_unique<stages::MoveRelative>("lift", cartesian);
+    lift->setGroup(ARM_GROUP);
+    lift->setIKFrame(EEF_LINK);
+
+    geometry_msgs::msg::Vector3Stamped up;
+    up.header.frame_id = "world";
+    up.vector.x = 0.0; up.vector.y = 0.0; up.vector.z = 1.0;
+    lift->setDirection(up);
+
+    lift->properties().set("min_distance", 0.05);
+    lift->properties().set("max_distance", 0.15);
+    task.add(std::move(lift));
+  }
+
+  // --------------------------------------------------
+  // Plan & Execute
+  // --------------------------------------------------
+  auto plan_result = task.plan();
+  if (plan_result != moveit::core::MoveItErrorCode::SUCCESS) {
+    RCLCPP_ERROR(node->get_logger(), "MTC planning failed: %d", plan_result.val);
+    rclcpp::shutdown();
+    return 1;
+  }
+
+  // Execute best (first) solution
+  const auto& sols = task.solutions();
+  if (sols.empty()) {
+    RCLCPP_ERROR(node->get_logger(), "No solutions generated");
+    rclcpp::shutdown();
+    return 2;
+  }
+
+  auto exec_result = task.execute(*sols.front());
+  if (exec_result != moveit::core::MoveItErrorCode::SUCCESS) {
+    RCLCPP_ERROR(node->get_logger(), "MTC execution failed: %d", exec_result.val);
+    rclcpp::shutdown();
+    return 3;
+  }
+
+  RCLCPP_INFO(node->get_logger(), "Pick complete");
+  rclcpp::shutdown();
+  return 0;
+}
+
 /home/beast/ros2_ws/src/arm_full/setup.cfg
 [develop]
 script_dir=$base/lib/arm_full
@@ -355,6 +585,8 @@ install_scripts=$base/lib/arm_full
 </robot>
 
 /home/beast/ros2_ws/src/arm_full/setup.py
+# setup.py (only the data_files part changes)
+
 from setuptools import find_packages, setup
 from glob import glob
 import os
@@ -369,32 +601,37 @@ def files_under(root):
                 out.append(os.path.join(dp, f))
     return out
 
+def subdirs(root):
+    return [os.path.join(root, d) for d in os.listdir(root) if os.path.isdir(os.path.join(root, d))]
+
+data_files = [
+    (os.path.join('share', 'ament_index', 'resource_index', 'packages'),
+     [os.path.join('resource', package_name)]),
+    (os.path.join('share', package_name), ['package.xml']),
+
+    # URDF + meshes
+    (os.path.join('share', package_name, 'urdf'),              files_under('urdf')),
+    (os.path.join('share', package_name, 'meshes/visual'),     files_under('meshes/visual')),
+    (os.path.join('share', package_name, 'meshes/collision'),  files_under('meshes/collision')),
+
+    # launch, configs, worlds
+    (os.path.join('share', package_name, 'launch'),  files_under('launch')),
+    (os.path.join('share', package_name, 'config'),  files_under('config')),
+    (os.path.join('share', package_name, 'worlds'),  files_under('worlds')),
+]
+
+# ✅ install each model folder as its own directory (preserve structure)
+for mdir in subdirs('models'):
+    data_files.append(
+        (os.path.join('share', package_name, 'models', os.path.basename(mdir)),
+         files_under(mdir))
+    )
 
 setup(
     name=package_name,
     version='3.1.1',
     packages=find_packages(exclude=['test']),
-    data_files=[
-        (os.path.join('share', 'ament_index', 'resource_index', 'packages'),
-        [os.path.join('resource', package_name)]),
-        (os.path.join('share', package_name), ['package.xml']),
-
-        # Install from the source package folder explicitly:
-        (os.path.join('share', package_name, 'urdf'),       files_under('urdf')),
-        (os.path.join('share', package_name, 'meshes/visual'),   files_under('meshes/visual')),
-        (os.path.join('share', package_name, 'meshes/collision'), files_under('meshes/collision')),
-
-        # launch + rviz
-        (os.path.join('share', package_name, 'launch'), files_under('launch')),
-        
-
-        # configs (yaml/xacro/srdf)
-        (os.path.join('share', package_name, 'config'), files_under('config')),
-
-        # ✅ add this for Gazebo worlds
-        (os.path.join('share', package_name, 'worlds'), files_under('worlds')),
-        (os.path.join('share', package_name, 'models'), files_under('models')),
-    ],
+    data_files=data_files,
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='beast',
@@ -402,10 +639,7 @@ setup(
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
-    entry_points={
-        'console_scripts': [
-        ],
-    },
+    entry_points={},
 )
 
 /home/beast/ros2_ws/src/arm_full/config/panda_hand.ros2_control.xacro
@@ -892,11 +1126,6 @@ panda_arm:
   kinematics_solver: kdl_kinematics_plugin/KDLKinematicsPlugin
   kinematics_solver_search_resolution: 0.005
   kinematics_solver_timeout: 0.05
-
-hand:
-  kinematics_solver: kdl_kinematics_plugin/KDLKinematicsPlugin
-  kinematics_solver_timeout: 0.005
-  kinematics_solver_search_resolution: 0.005
 /home/beast/ros2_ws/src/arm_full/config/ompl_planning.yaml
 planning_plugins:
   - ompl_interface/OMPLPlanner
@@ -1252,24 +1481,88 @@ initial_positions:
   panda_joint7: 0.785
 
 /home/beast/ros2_ws/src/arm_full/models/workpiece_box/model.sdf
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <sdf version="1.7">
   <model name="workpiece_box">
-    <static>true</static>
-    <pose>0.5 0 0.4 0 0 0</pose>
+    <static>false</static>
+    <!-- spawn a bit above the floor; adjust as you like -->
+    <pose>0.5 0 0.6 0 0 0</pose>
+
     <link name="link">
-      <collision name="collision">
+      <!-- Simple inertia; close enough for grasp testing -->
+      <inertial>
+        <mass>1.2</mass>
+        <inertia>
+          <!-- approx for 0.20x0.20x0.10 box (+ small notch) -->
+          <ixx>0.0048</ixx>
+          <iyy>0.0048</iyy>
+          <izz>0.0072</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <!-- MAIN BOX (200x200x100 mm) -->
+      <collision name="box_collision">
+        <!-- centered at the link frame -->
+        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box><size>0.20 0.20 0.10</size></box>
         </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+            </ode>
+          </friction>
+          <contact>
+            <ode><kp>1e5</kp><kd>1.0</kd></ode>
+          </contact>
+        </surface>
       </collision>
-      <visual name="visual">
+
+      <visual name="box_visual">
+        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box><size>0.20 0.20 0.10</size></box>
         </geometry>
         <material>
           <ambient>0.2 0.4 0.8 1</ambient>
           <diffuse>0.2 0.4 0.8 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- TOP NOTCH / PEG (30x50x60 mm) -->
+      <!-- Sits on the center of the top face. 
+           The top face of the box is at z=+0.05, so we place the notch 
+           so its base is exactly on that face: half notch height is 0.03 -> center at 0.05+0.03 = 0.08 -->
+      <collision name="notch_collision">
+        <pose>0 0 0.08 0 0 0</pose>
+        <geometry>
+          <box><size>0.03 0.05 0.06</size></box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <!-- Make the notch “grippy” for the fingers -->
+              <mu>2.0</mu>
+              <mu2>2.0</mu2>
+            </ode>
+          </friction>
+          <contact>
+            <ode><kp>1e5</kp><kd>1.0</kd></ode>
+          </contact>
+        </surface>
+      </collision>
+
+      <visual name="notch_visual">
+        <pose>0 0 0.08 0 0 0</pose>
+        <geometry>
+          <box><size>0.03 0.05 0.06</size></box>
+        </geometry>
+        <material>
+          <ambient>0.1 0.1 0.1 1</ambient>
+          <diffuse>0.12 0.12 0.12 1</diffuse>
         </material>
       </visual>
     </link>
@@ -1843,7 +2136,7 @@ def generate_launch_description():
         .planning_scene_monitor(
             publish_robot_description=True, publish_robot_description_semantic=True
         )
-        .trajectory_execution(file_path="config/gripper_moveit_controllers.yaml")
+        .trajectory_execution(file_path="config/moveit_controllers.yaml")
         .planning_pipelines(
             pipelines=["ompl", "chomp", "pilz_industrial_motion_planner", "stomp"]
         )
@@ -1981,13 +2274,24 @@ from moveit_configs_utils import MoveItConfigsBuilder
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import SetEnvironmentVariable
+from launch.substitutions import EnvironmentVariable 
 
 
 def generate_launch_description():
 
-    SetEnvironmentVariable(
-    name='GZ_SIM_RESOURCE_PATH',
-    value=[FindPackageShare('arm_full')]
+
+    models_dir = PathJoinSubstitution([FindPackageShare("arm_full"), "models"])
+
+
+    set_gz_path = SetEnvironmentVariable(
+        name="GZ_SIM_RESOURCE_PATH",
+        value=[
+            EnvironmentVariable("GZ_SIM_RESOURCE_PATH", default_value=""),
+            os.pathsep,
+            models_dir,                              # <-- point directly at .../arm_full/models
+            os.pathsep,
+            FindPackageShare("arm_full"),            # (optional) also add the package root
+        ],
     )
 
     # Mode switches
@@ -2180,6 +2484,7 @@ def generate_launch_description():
             rviz_config_arg,
             db_arg,
             ros2_control_hardware_type,
+            set_gz_path,
             rviz_node,
             #static_tf_node,
             robot_state_publisher,
@@ -2200,6 +2505,61 @@ def generate_launch_description():
             mongodb_server_node,
         ]
     )
+
+/home/beast/ros2_ws/src/arm_full/CMakeLists.txt
+cmake_minimum_required(VERSION 3.8)
+project(arm_full)
+
+# C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Dependencies
+find_package(moveit_task_constructor_core REQUIRED)
+find_package(moveit_task_constructor_msgs REQUIRED)
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(class_loader REQUIRED)
+
+# ---- C++ node ----
+
+add_executable(mtc_pick_box src/mtc_pick_box.cpp)
+ament_target_dependencies(mtc_pick_box
+  rclcpp
+  moveit_task_constructor_core
+  moveit_task_constructor_msgs
+)
+
+
+add_executable(gripper_open_close src/gripper_open_close.cpp)
+ament_target_dependencies(gripper_open_close
+  rclcpp
+  moveit_ros_planning_interface
+)
+
+install(TARGETS mtc_pick_box
+  DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS gripper_open_close
+  DESTINATION lib/${PROJECT_NAME})
+
+# ---- Python (reuse setup.py) ----
+# # ament_python_install_package(${PROJECT_NAME})
+# install(PROGRAMS
+#   ${PROJECT_NAME}/nodes/gripper_open_close.py
+#   DESTINATION lib/${PROJECT_NAME}
+# )
+
+# ---- Share resources (urdf, meshes, launch, etc.) ----
+install(DIRECTORY launch urdf config meshes worlds models
+  DESTINATION share/${PROJECT_NAME}
+)
+
+# ---- Export ----
+ament_package()
 
 /home/beast/ros2_ws/src/arm_full/package.xml
 <?xml version="1.0"?>
@@ -2222,9 +2582,27 @@ def generate_launch_description():
 
  <!-- Build tool -->
   <buildtool_depend>ament_python</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
   <!-- Runtime deps -->
   <!-- package.xml -->
+
+  <!-- C++ deps -->
+  <depend>moveit_task_constructor_core</depend>
+  <depend>moveit_task_constructor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>moveit_msgs</depend>
+
+  <depend>rclcpp</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>pluginlib</depend>
+  <depend>class_loader</depend>
+
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>moveit_py</exec_depend>
+  <exec_depend>moveit_configs_utils</exec_depend>
+
   <exec_depend>gz_ros2_control</exec_depend>
   <exec_depend>ros_gz_sim</exec_depend>
 
@@ -2244,7 +2622,7 @@ def generate_launch_description():
 
 
   <export>
-    <build_type>ament_python</build_type>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>
 
