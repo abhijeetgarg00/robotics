@@ -1,0 +1,2423 @@
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/.setup_assistant
+moveit_setup_assistant_config:
+  URDF:
+    package: moveit_resources_panda_description
+    relative_path: urdf/panda.urdf
+  SRDF:
+    relative_path: config/panda_arm_hand.srdf.xacro
+  CONFIG:
+    author_name: Mike Lautman
+    author_email: mike@picknik.ai
+    generated_timestamp: 1519152260
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/panda_hand.ros2_control.xacro
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:macro name="panda_hand_ros2_control" params="name ros2_control_hardware_type">
+        <ros2_control name="${name}" type="system">
+            <hardware>
+                <xacro:if value="${ros2_control_hardware_type == 'gz'}">
+                    <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+                </xacro:if>
+                <xacro:if value="${ros2_control_hardware_type == 'mock_components'}">
+                    <plugin>mock_components/GenericSystem</plugin>
+                </xacro:if>
+                <xacro:if value="${ros2_control_hardware_type == 'isaac'}">
+                    <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+                    <param name="joint_commands_topic">/isaac_joint_commands</param>
+                    <param name="joint_states_topic">/isaac_joint_states</param>
+                </xacro:if>
+            </hardware>
+            <joint name="panda_finger_joint1">
+                <command_interface name="position" />
+                <state_interface name="position">
+                  <param name="initial_value">0.0</param>
+                </state_interface>
+                <state_interface name="velocity">
+                    <param name="initial_value">0.0</param>
+                </state_interface>
+            </joint>
+            <joint name="panda_finger_joint2">
+                <command_interface name="position" />
+                <state_interface name="position">
+                  <param name="initial_value">0.0</param>
+                </state_interface>
+                <state_interface name="velocity">
+                    <param name="initial_value">0.0</param>
+                </state_interface>
+            </joint>
+        </ros2_control>
+    </xacro:macro>
+
+</robot>
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/hard_joint_limits.yaml
+# joint_limits.yaml allows the dynamics properties specified in the URDF to be overwritten or augmented as needed
+# Specific joint properties can be changed with the keys [max_position, min_position, max_velocity, max_acceleration]
+# Joint limits can be turned off with [has_velocity_limits, has_acceleration_limits, has_jerk_limits]
+# Joint limits set from this config: https://frankaemika.github.io/docs/control_parameters.html
+
+joint_limits:
+  panda_joint1:
+    has_velocity_limits: true
+    max_velocity: 2.1750
+    has_acceleration_limits: true
+    max_acceleration: 15.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint2:
+    has_velocity_limits: true
+    max_velocity: 2.1750
+    has_acceleration_limits: true
+    max_acceleration: 7.5
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint3:
+    has_velocity_limits: true
+    max_velocity: 2.1750
+    has_acceleration_limits: true
+    max_acceleration: 10.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint4:
+    has_velocity_limits: true
+    max_velocity: 2.1750
+    has_acceleration_limits: true
+    max_acceleration: 12.5
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint5:
+    has_velocity_limits: true
+    max_velocity: 2.6100
+    has_acceleration_limits: true
+    max_acceleration: 15.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint6:
+    has_velocity_limits: true
+    max_velocity: 2.6100
+    has_acceleration_limits: true
+    max_acceleration: 20.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint7:
+    has_velocity_limits: true
+    max_velocity: 2.6100
+    has_acceleration_limits: true
+    max_acceleration: 20.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_finger_joint1:
+    has_velocity_limits: true
+    max_velocity: 0.1
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_finger_joint2:
+    has_velocity_limits: true
+    max_velocity: 0.1
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/gripper_moveit_controllers.yaml
+# MoveIt uses this configuration for controller management
+trajectory_execution:
+  allowed_execution_duration_scaling: 1.2
+  allowed_goal_duration_margin: 0.5
+  allowed_start_tolerance: 0.01
+
+moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
+
+moveit_simple_controller_manager:
+  controller_names:
+    - panda_arm_controller
+    - panda_hand_controller
+
+  panda_arm_controller:
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: true
+    joints:
+      - panda_joint1
+      - panda_joint2
+      - panda_joint3
+      - panda_joint4
+      - panda_joint5
+      - panda_joint6
+      - panda_joint7
+
+  panda_hand_controller:
+    action_ns: gripper_cmd
+    type: GripperCommand
+    default: true
+    joints:
+      - panda_finger_joint1
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/panda.urdf.xacro
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="panda">
+    <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
+    <xacro:arg name="ros2_control_hardware_type" default="mock_components" />
+
+    <!-- Import panda urdf file -->
+    <xacro:include filename="$(find moveit_resources_panda_description)/urdf/panda.urdf.xacro" />
+
+    <!-- Import panda ros2_control description -->
+    <xacro:include filename="panda.ros2_control.xacro" />
+    <xacro:include filename="panda_hand.ros2_control.xacro" />
+    <xacro:panda_ros2_control name="PandaSystem"
+                            initial_positions_file="$(arg initial_positions_file)"
+                            ros2_control_hardware_type="$(arg ros2_control_hardware_type)"/>
+    <xacro:panda_hand_ros2_control 
+        name="PandaHandFakeSystem" 
+        ros2_control_hardware_type="$(arg ros2_control_hardware_type)"/>
+
+    <gazebo>
+        <plugin filename="libgz_ros2_control-system.so"
+                name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+            <!-- point to your controllers yaml -->
+            <parameters>ros2_controllers.yaml</parameters>
+
+            <!-- hold joints at their commanded positions even when idle -->
+            <hold_joints>true</hold_joints>
+        </plugin>
+    </gazebo>
+
+</robot>
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/trac_ik_kinematics.yaml
+panda_arm:
+  kinematics_solver: trac_ik_kinematics_plugin/TRAC_IKKinematicsPlugin
+  kinematics_solver_timeout: 0.05
+  kinematics_solver_attempts: 3
+  epsilon: 0.00001
+  solve_type: "Speed"
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/pilz_industrial_motion_planner_planning.yaml
+planning_plugins:
+  - pilz_industrial_motion_planner/CommandPlanner
+# The order of the elements in the adapter corresponds to the order they are processed by the motion planning pipeline.
+request_adapters:
+  - default_planning_request_adapters/ValidateWorkspaceBounds
+  - default_planning_request_adapters/CheckStartStateBounds
+  - default_planning_request_adapters/CheckStartStateCollision
+
+default_planner_config: PTP
+capabilities: >-
+    pilz_industrial_motion_planner/MoveGroupSequenceAction
+    pilz_industrial_motion_planner/MoveGroupSequenceService
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/ros2_controllers.yaml
+
+controller_manager:
+  ros__parameters:
+    use_sim_time: false
+    update_rate: 100  # Hz
+
+    panda_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    # EITHER keep the old one…
+    # panda_hand_controller:
+    #   type: position_controllers/GripperActionController
+
+    # …or use the non-deprecated one (recommended):
+    panda_hand_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+joint_state_broadcaster:
+  ros__parameters:
+    use_sim_time: false
+
+panda_arm_controller:
+  ros__parameters:
+    use_sim_time: false
+    command_interfaces: [position]
+    state_interfaces: [position, velocity]
+    joints:
+      - panda_joint1
+      - panda_joint2
+      - panda_joint3
+      - panda_joint4
+      - panda_joint5
+      - panda_joint6
+      - panda_joint7
+    allow_nonzero_velocity_at_trajectory_end: true
+
+panda_hand_controller:
+  ros__parameters:
+    use_sim_time: false
+    type: joint_trajectory_controller/JointTrajectoryController
+    joints:
+      - panda_finger_joint1
+      - panda_finger_joint2
+    command_interfaces: [position]
+    state_interfaces: [position, velocity]
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/moveit_controllers.yaml
+# MoveIt uses this configuration for controller management
+trajectory_execution:
+  allowed_execution_duration_scaling: 1.2
+  allowed_goal_duration_margin: 0.5
+  allowed_start_tolerance: 0.01
+  execution_duration_monitoring: true
+
+moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
+
+moveit_simple_controller_manager:
+  controller_names:
+    - panda_arm_controller
+    - panda_hand_controller
+
+  panda_arm_controller:
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: true
+    joints:
+      - panda_joint1
+      - panda_joint2
+      - panda_joint3
+      - panda_joint4
+      - panda_joint5
+      - panda_joint6
+      - panda_joint7
+
+  panda_hand_controller:
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: true
+    joints: 
+      - panda_finger_joint1
+      - panda_finger_joint2
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/pilz_cartesian_limits.yaml
+# Cartesian limits for the Pilz planner
+cartesian_limits:
+  max_trans_vel: 1.0
+  max_trans_acc: 2.25
+  max_trans_dec: -5.0
+  max_rot_vel: 1.57
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/panda.ros2_control.xacro
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:macro name="panda_ros2_control" params="name initial_positions_file ros2_control_hardware_type">
+        <xacro:property name="initial_positions" value="${xacro.load_yaml(initial_positions_file)['initial_positions']}"/>
+
+        <ros2_control name="${name}" type="system">
+            <hardware>
+                <xacro:if value="${ros2_control_hardware_type == 'gz'}">
+                    <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+                </xacro:if>
+                <xacro:if value="${ros2_control_hardware_type == 'mock_components'}">
+                    <plugin>mock_components/GenericSystem</plugin>
+                </xacro:if>
+                <xacro:if value="${ros2_control_hardware_type == 'isaac'}">
+                    <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+                    <param name="joint_commands_topic">/isaac_joint_commands</param>
+                    <param name="joint_states_topic">/isaac_joint_states</param>
+                </xacro:if>
+            </hardware>
+            <joint name="panda_joint1">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['panda_joint1']}</param>
+                </state_interface>
+                <state_interface name="velocity">
+                  <param name="initial_value">0.0</param>
+                </state_interface>
+            </joint>
+            <joint name="panda_joint2">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['panda_joint2']}</param>
+                </state_interface>
+                <state_interface name="velocity">
+                  <param name="initial_value">0.0</param>
+                </state_interface>
+            </joint>
+            <joint name="panda_joint3">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['panda_joint3']}</param>
+                </state_interface>
+                <state_interface name="velocity">
+                  <param name="initial_value">0.0</param>
+                </state_interface>
+            </joint>
+            <joint name="panda_joint4">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['panda_joint4']}</param>
+                </state_interface>
+                <state_interface name="velocity">
+                  <param name="initial_value">0.0</param>
+                </state_interface>
+            </joint>
+            <joint name="panda_joint5">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['panda_joint5']}</param>
+                </state_interface>
+                <state_interface name="velocity">
+                  <param name="initial_value">0.0</param>
+                </state_interface>
+            </joint>
+            <joint name="panda_joint6">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['panda_joint6']}</param>
+                </state_interface>
+                <state_interface name="velocity">
+                  <param name="initial_value">0.0</param>
+                </state_interface>
+            </joint>
+            <joint name="panda_joint7">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['panda_joint7']}</param>
+                </state_interface>
+                <state_interface name="velocity">
+                  <param name="initial_value">0.0</param>
+                </state_interface>
+            </joint>
+        </ros2_control>
+    </xacro:macro>
+</robot>
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/kinematics.yaml
+panda_arm:
+  kinematics_solver: kdl_kinematics_plugin/KDLKinematicsPlugin
+  kinematics_solver_search_resolution: 0.005
+  kinematics_solver_timeout: 0.05
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/ompl_planning.yaml
+planning_plugins:
+  - ompl_interface/OMPLPlanner
+# To optionally use Ruckig for jerk-limited smoothing, add this line to the request adapters below
+# default_planning_request_adapters/AddRuckigTrajectorySmoothing
+request_adapters:
+  - default_planning_request_adapters/ResolveConstraintFrames
+  - default_planning_request_adapters/ValidateWorkspaceBounds
+  - default_planning_request_adapters/CheckStartStateBounds
+  - default_planning_request_adapters/CheckStartStateCollision
+response_adapters:
+  - default_planning_response_adapters/AddTimeOptimalParameterization
+  - default_planning_response_adapters/ValidateSolution
+  - default_planning_response_adapters/DisplayMotionPath
+planner_configs:
+  APSConfigDefault:
+    type: geometric::AnytimePathShortening
+    shortcut: 1  # Attempt to shortcut all new solution paths
+    hybridize: 1  # Compute hybrid solution trajectories
+    max_hybrid_paths: 36  # Number of hybrid paths generated per iteration
+    num_planners: 8  # The number of default planners to use for planning
+    planners: "RRTConnect,RRTConnect,RRTConnect,RRTConnect,RRTConnect,RRTConnect,RRTConnect,RRTConnect"  # A comma-separated list of planner types (e.g., "PRM,EST,RRTConnect"Optionally, planner parameters can be passed to change the default:"PRM[max_nearest_neighbors=5],EST[goal_bias=.5],RRT[range=10. goal_bias=.1]"
+  SBLkConfigDefault:
+    type: geometric::SBL
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+  ESTkConfigDefault:
+    type: geometric::EST
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0 setup()
+    goal_bias: 0.05  # When close to goal select goal, with this probability. default: 0.05
+  LBKPIECEkConfigDefault:
+    type: geometric::LBKPIECE
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    border_fraction: 0.9  # Fraction of time focused on boarder default: 0.9
+    min_valid_path_fraction: 0.5  # Accept partially valid moves above fraction. default: 0.5
+  BKPIECEkConfigDefault:
+    type: geometric::BKPIECE
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    border_fraction: 0.9  # Fraction of time focused on boarder default: 0.9
+    failed_expansion_score_factor: 0.5  # When extending motion fails, scale score by factor. default: 0.5
+    min_valid_path_fraction: 0.5  # Accept partially valid moves above fraction. default: 0.5
+  KPIECEkConfigDefault:
+    type: geometric::KPIECE
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    goal_bias: 0.05  # When close to goal select goal, with this probability. default: 0.05
+    border_fraction: 0.9  # Fraction of time focused on boarder default: 0.9 (0.0,1.]
+    failed_expansion_score_factor: 0.5  # When extending motion fails, scale score by factor. default: 0.5
+    min_valid_path_fraction: 0.5  # Accept partially valid moves above fraction. default: 0.5
+  RRTkConfigDefault:
+    type: geometric::RRT
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    goal_bias: 0.05  # When close to goal select goal, with this probability? default: 0.05
+  RRTConnectkConfigDefault:
+    type: geometric::RRTConnect
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+  RRTstarkConfigDefault:
+    type: geometric::RRTstar
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    goal_bias: 0.05  # When close to goal select goal, with this probability? default: 0.05
+    delay_collision_checking: 1  # Stop collision checking as soon as C-free parent found. default 1
+  TRRTkConfigDefault:
+    type: geometric::TRRT
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    goal_bias: 0.05  # When close to goal select goal, with this probability? default: 0.05
+    max_states_failed: 10  # when to start increasing temp. default: 10
+    temp_change_factor: 2.0  # how much to increase or decrease temp. default: 2.0
+    min_temperature: 10e-10  # lower limit of temp change. default: 10e-10
+    init_temperature: 10e-6  # initial temperature. default: 10e-6
+    frountier_threshold: 0.0  # dist new state to nearest neighbor to disqualify as frontier. default: 0.0 set in setup()
+    frountierNodeRatio: 0.1  # 1/10, or 1 nonfrontier for every 10 frontier. default: 0.1
+    k_constant: 0.0  # value used to normalize expresssion. default: 0.0 set in setup()
+  PRMkConfigDefault:
+    type: geometric::PRM
+    max_nearest_neighbors: 10  # use k nearest neighbors. default: 10
+  PRMstarkConfigDefault:
+    type: geometric::PRMstar
+  FMTkConfigDefault:
+    type: geometric::FMT
+    num_samples: 1000  # number of states that the planner should sample. default: 1000
+    radius_multiplier: 1.1  # multiplier used for the nearest neighbors search radius. default: 1.1
+    nearest_k: 1  # use Knearest strategy. default: 1
+    cache_cc: 1  # use collision checking cache. default: 1
+    heuristics: 0  # activate cost to go heuristics. default: 0
+    extended_fmt: 1  # activate the extended FMT*: adding new samples if planner does not finish successfully. default: 1
+  BFMTkConfigDefault:
+    type: geometric::BFMT
+    num_samples: 1000  # number of states that the planner should sample. default: 1000
+    radius_multiplier: 1.0  # multiplier used for the nearest neighbors search radius. default: 1.0
+    nearest_k: 1  # use the Knearest strategy. default: 1
+    balanced: 0  # exploration strategy: balanced true expands one tree every iteration. False will select the tree with lowest maximum cost to go. default: 1
+    optimality: 1  # termination strategy: optimality true finishes when the best possible path is found. Otherwise, the algorithm will finish when the first feasible path is found. default: 1
+    heuristics: 1  # activates cost to go heuristics. default: 1
+    cache_cc: 1  # use the collision checking cache. default: 1
+    extended_fmt: 1  # Activates the extended FMT*: adding new samples if planner does not finish successfully. default: 1
+  PDSTkConfigDefault:
+    type: geometric::PDST
+  STRIDEkConfigDefault:
+    type: geometric::STRIDE
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    goal_bias: 0.05  # When close to goal select goal, with this probability. default: 0.05
+    use_projected_distance: 0  # whether nearest neighbors are computed based on distances in a projection of the state rather distances in the state space itself. default: 0
+    degree: 16  # desired degree of a node in the Geometric Near-neightbor Access Tree (GNAT). default: 16
+    max_degree: 18  # max degree of a node in the GNAT. default: 12
+    min_degree: 12  # min degree of a node in the GNAT. default: 12
+    max_pts_per_leaf: 6  # max points per leaf in the GNAT. default: 6
+    estimated_dimension: 0.0  # estimated dimension of the free space. default: 0.0
+    min_valid_path_fraction: 0.2  # Accept partially valid moves above fraction. default: 0.2
+  BiTRRTkConfigDefault:
+    type: geometric::BiTRRT
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    temp_change_factor: 0.1  # how much to increase or decrease temp. default: 0.1
+    init_temperature: 100  # initial temperature. default: 100
+    frountier_threshold: 0.0  # dist new state to nearest neighbor to disqualify as frontier. default: 0.0 set in setup()
+    frountier_node_ratio: 0.1  # 1/10, or 1 nonfrontier for every 10 frontier. default: 0.1
+    cost_threshold: 1e300  # the cost threshold. Any motion cost that is not better will not be expanded. default: inf
+  LBTRRTkConfigDefault:
+    type: geometric::LBTRRT
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    goal_bias: 0.05  # When close to goal select goal, with this probability. default: 0.05
+    epsilon: 0.4  # optimality approximation factor. default: 0.4
+  BiESTkConfigDefault:
+    type: geometric::BiEST
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+  ProjESTkConfigDefault:
+    type: geometric::ProjEST
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    goal_bias: 0.05  # When close to goal select goal, with this probability. default: 0.05
+  LazyPRMkConfigDefault:
+    type: geometric::LazyPRM
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+  LazyPRMstarkConfigDefault:
+    type: geometric::LazyPRMstar
+  SPARSkConfigDefault:
+    type: geometric::SPARS
+    stretch_factor: 3.0  # roadmap spanner stretch factor. multiplicative upper bound on path quality. It does not make sense to make this parameter more than 3. default: 3.0
+    sparse_delta_fraction: 0.25  # delta fraction for connection distance. This value represents the visibility range of sparse samples. default: 0.25
+    dense_delta_fraction: 0.001  # delta fraction for interface detection. default: 0.001
+    max_failures: 1000  # maximum consecutive failure limit. default: 1000
+  SPARStwokConfigDefault:
+    type: geometric::SPARStwo
+    stretch_factor: 3.0  # roadmap spanner stretch factor. multiplicative upper bound on path quality. It does not make sense to make this parameter more than 3. default: 3.0
+    sparse_delta_fraction: 0.25  # delta fraction for connection distance. This value represents the visibility range of sparse samples. default: 0.25
+    dense_delta_fraction: 0.001  # delta fraction for interface detection. default: 0.001
+    max_failures: 5000  # maximum consecutive failure limit. default: 5000
+  TrajOptDefault:
+    type: geometric::TrajOpt
+
+panda_arm:
+  planner_configs:
+    - APSConfigDefault
+    - SBLkConfigDefault
+    - ESTkConfigDefault
+    - LBKPIECEkConfigDefault
+    - BKPIECEkConfigDefault
+    - KPIECEkConfigDefault
+    - RRTkConfigDefault
+    - RRTConnectkConfigDefault
+    - RRTstarkConfigDefault
+    - TRRTkConfigDefault
+    - PRMkConfigDefault
+    - PRMstarkConfigDefault
+    - FMTkConfigDefault
+    - BFMTkConfigDefault
+    - PDSTkConfigDefault
+    - STRIDEkConfigDefault
+    - BiTRRTkConfigDefault
+    - LBTRRTkConfigDefault
+    - BiESTkConfigDefault
+    - ProjESTkConfigDefault
+    - LazyPRMkConfigDefault
+    - LazyPRMstarkConfigDefault
+    - SPARSkConfigDefault
+    - SPARStwokConfigDefault
+    - TrajOptDefault
+panda_arm_hand:
+  planner_configs:
+    - APSConfigDefault
+    - SBLkConfigDefault
+    - ESTkConfigDefault
+    - LBKPIECEkConfigDefault
+    - BKPIECEkConfigDefault
+    - KPIECEkConfigDefault
+    - RRTkConfigDefault
+    - RRTConnectkConfigDefault
+    - RRTstarkConfigDefault
+    - TRRTkConfigDefault
+    - PRMkConfigDefault
+    - PRMstarkConfigDefault
+    - FMTkConfigDefault
+    - BFMTkConfigDefault
+    - PDSTkConfigDefault
+    - STRIDEkConfigDefault
+    - BiTRRTkConfigDefault
+    - LBTRRTkConfigDefault
+    - BiESTkConfigDefault
+    - ProjESTkConfigDefault
+    - LazyPRMkConfigDefault
+    - LazyPRMstarkConfigDefault
+    - SPARSkConfigDefault
+    - SPARStwokConfigDefault
+    - TrajOptDefault
+hand:
+  planner_configs:
+    - APSConfigDefault
+    - SBLkConfigDefault
+    - ESTkConfigDefault
+    - LBKPIECEkConfigDefault
+    - BKPIECEkConfigDefault
+    - KPIECEkConfigDefault
+    - RRTkConfigDefault
+    - RRTConnectkConfigDefault
+    - RRTstarkConfigDefault
+    - TRRTkConfigDefault
+    - PRMkConfigDefault
+    - PRMstarkConfigDefault
+    - FMTkConfigDefault
+    - BFMTkConfigDefault
+    - PDSTkConfigDefault
+    - STRIDEkConfigDefault
+    - BiTRRTkConfigDefault
+    - LBTRRTkConfigDefault
+    - BiESTkConfigDefault
+    - ProjESTkConfigDefault
+    - LazyPRMkConfigDefault
+    - LazyPRMstarkConfigDefault
+    - SPARSkConfigDefault
+    - SPARStwokConfigDefault
+    - TrajOptDefault
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/hand.xacro
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="panda">
+  <xacro:macro name="hand">
+    <!--GROUPS: Representation of a set of joints and links. This can be useful for specifying DOF to plan for, defining arms, end effectors, etc-->
+    <!--LINKS: When a link is specified, the parent joint of that link (if it exists) is automatically included-->
+    <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
+    <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
+    <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
+    <group name="hand">
+      <link name="panda_hand" />
+      <link name="panda_leftfinger" />
+      <link name="panda_rightfinger" />
+      <joint name="panda_finger_joint1" />
+      <joint name="panda_finger_joint2" />
+    </group>
+    <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
+    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+    <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+    <disable_collisions link1="panda_hand" link2="panda_leftfinger" reason="Adjacent" />
+    <disable_collisions link1="panda_hand" link2="panda_rightfinger" reason="Adjacent" />
+    <disable_collisions link1="panda_leftfinger" link2="panda_rightfinger" reason="Default" />
+  </xacro:macro>
+</robot>
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/stomp_planning.yaml
+planning_plugins:
+  - stomp_moveit/StompPlanner
+# The order of the elements in the adapter corresponds to the order they are processed by the motion planning pipeline.
+request_adapters:
+  - default_planning_request_adapters/ResolveConstraintFrames
+  - default_planning_request_adapters/ValidateWorkspaceBounds
+  - default_planning_request_adapters/CheckStartStateBounds
+  - default_planning_request_adapters/CheckStartStateCollision
+response_adapters:
+  - default_planning_response_adapters/AddTimeOptimalParameterization
+  - default_planning_response_adapters/ValidateSolution
+  - default_planning_response_adapters/DisplayMotionPath
+
+stomp_moveit:
+  num_timesteps: 60
+  num_iterations: 40
+  num_iterations_after_valid: 0
+  num_rollouts: 30
+  max_rollouts: 30
+  exponentiated_cost_sensitivity: 0.5
+  control_cost_weight: 0.1
+  delta_t: 0.1
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/panda_arm_hand.srdf.xacro
+<?xml version='1.0' encoding='utf-8'?>
+<!--This does not replace URDF, and is not an extension of URDF.
+    This is a format for representing semantic information about the robot structure.
+    A URDF file must exist for this robot as well, where the joints and the links that are referenced are defined
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="panda">
+  <xacro:include filename="$(find moveit_resources_panda_moveit_config)/config/panda_arm.xacro" />
+  <xacro:include filename="$(find moveit_resources_panda_moveit_config)/config/hand.xacro" />
+  <xacro:panda_arm />
+  <xacro:hand />
+  <!--GROUPS: Representation of a set of joints and links. This can be useful for specifying DOF to plan for, defining arms, end effectors, etc-->
+  <!--LINKS: When a link is specified, the parent joint of that link (if it exists) is automatically included-->
+  <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
+  <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
+  <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
+  <group name="panda_arm_hand">
+    <group name="panda_arm" />
+    <group name="hand" />
+  </group>
+  <group_state name="open" group="hand">
+    <joint name="panda_finger_joint1" value="0.035" />
+    <joint name="panda_finger_joint2" value="0.035" />
+  </group_state>
+  <group_state name="close" group="hand">
+    <joint name="panda_finger_joint1" value="0" />
+    <joint name="panda_finger_joint2" value="0" />
+  </group_state>
+  <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+  <end_effector name="hand" parent_link="panda_link8" group="hand" parent_group="panda_arm" />
+  <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+  <disable_collisions link1="panda_hand" link2="panda_link3" reason="Never" />
+  <disable_collisions link1="panda_hand" link2="panda_link4" reason="Never" />
+  <disable_collisions link1="panda_hand" link2="panda_link6" reason="Never" />
+  <disable_collisions link1="panda_hand" link2="panda_link7" reason="Adjacent" />
+  <disable_collisions link1="panda_leftfinger" link2="panda_link3" reason="Never" />
+  <disable_collisions link1="panda_leftfinger" link2="panda_link4" reason="Never" />
+  <disable_collisions link1="panda_leftfinger" link2="panda_link6" reason="Never" />
+  <disable_collisions link1="panda_leftfinger" link2="panda_link7" reason="Never" />
+  <disable_collisions link1="panda_link3" link2="panda_rightfinger" reason="Never" />
+  <disable_collisions link1="panda_link4" link2="panda_rightfinger" reason="Never" />
+  <disable_collisions link1="panda_link6" link2="panda_rightfinger" reason="Never" />
+  <disable_collisions link1="panda_link7" link2="panda_rightfinger" reason="Never" />
+</robot>
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/joint_limits.yaml
+# joint_limits.yaml allows the dynamics properties specified in the URDF to be overwritten or augmented as needed
+# Specific joint properties can be changed with the keys [max_position, min_position, max_velocity, max_acceleration]
+# Joint limits can be turned off with [has_velocity_limits, has_acceleration_limits, has_jerk_limits]
+
+joint_limits:
+  panda_joint1:
+    has_velocity_limits: true
+    max_velocity: 2.1750
+    has_acceleration_limits: true
+    max_acceleration: 3.75
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint2:
+    has_velocity_limits: true
+    max_velocity: 2.1750
+    has_acceleration_limits: true
+    max_acceleration: 1.875
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint3:
+    has_velocity_limits: true
+    max_velocity: 2.1750
+    has_acceleration_limits: true
+    max_acceleration: 2.5
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint4:
+    has_velocity_limits: true
+    max_velocity: 2.1750
+    has_acceleration_limits: true
+    max_acceleration: 3.125
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint5:
+    has_velocity_limits: true
+    max_velocity: 2.6100
+    has_acceleration_limits: true
+    max_acceleration: 3.75
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint6:
+    has_velocity_limits: true
+    max_velocity: 2.6100
+    has_acceleration_limits: true
+    max_acceleration: 5.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_joint7:
+    has_velocity_limits: true
+    max_velocity: 2.6100
+    has_acceleration_limits: true
+    max_acceleration: 5.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_finger_joint1:
+    has_velocity_limits: true
+    max_velocity: 0.1
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+  panda_finger_joint2:
+    has_velocity_limits: true
+    max_velocity: 0.1
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+    has_jerk_limits: true
+    max_jerk: 300.0
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/panda_arm.xacro
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="panda">
+  <xacro:macro name="panda_arm">
+    <!--GROUPS: Representation of a set of joints and links. This can be useful for specifying DOF to plan for, defining arms, end effectors, etc-->
+    <!--LINKS: When a link is specified, the parent joint of that link (if it exists) is automatically included-->
+    <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
+    <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
+    <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
+    <group name="panda_arm">
+      <chain base_link="panda_link0" tip_link="panda_link8" />
+    </group>
+    <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
+    <group_state name="ready" group="panda_arm">
+      <joint name="panda_joint1" value="0" />
+      <joint name="panda_joint2" value="-0.785" />
+      <joint name="panda_joint3" value="0" />
+      <joint name="panda_joint4" value="-2.356" />
+      <joint name="panda_joint5" value="0" />
+      <joint name="panda_joint6" value="1.571" />
+      <joint name="panda_joint7" value="0.785" />
+    </group_state>
+    <group_state name="extended" group="panda_arm">
+      <joint name="panda_joint1" value="0" />
+      <joint name="panda_joint2" value="0" />
+      <joint name="panda_joint3" value="0" />
+      <joint name="panda_joint4" value="0" />
+      <joint name="panda_joint5" value="0" />
+      <joint name="panda_joint6" value="1.571" />
+      <joint name="panda_joint7" value="0.785" />
+    </group_state>
+    <group_state name="transport" group="panda_arm">
+      <joint name="panda_joint1" value="0" />
+      <joint name="panda_joint2" value="-0.5599" />
+      <joint name="panda_joint3" value="0" />
+      <joint name="panda_joint4" value="-2.97" />
+      <joint name="panda_joint5" value="0" />
+      <joint name="panda_joint6" value="0" />
+      <joint name="panda_joint7" value="0.785" />
+    </group_state>
+    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+    <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
+    <virtual_joint name="virtual_joint" type="floating" parent_frame="world" child_link="panda_link0" />
+    <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+    <disable_collisions link1="panda_link0" link2="panda_link1" reason="Adjacent" />
+    <disable_collisions link1="panda_link0" link2="panda_link2" reason="Never" />
+    <disable_collisions link1="panda_link0" link2="panda_link3" reason="Never" />
+    <disable_collisions link1="panda_link0" link2="panda_link4" reason="Never" />
+    <disable_collisions link1="panda_link1" link2="panda_link2" reason="Adjacent" />
+    <disable_collisions link1="panda_link1" link2="panda_link3" reason="Never" />
+    <disable_collisions link1="panda_link1" link2="panda_link4" reason="Never" />
+    <disable_collisions link1="panda_link2" link2="panda_link3" reason="Adjacent" />
+    <disable_collisions link1="panda_link2" link2="panda_link4" reason="Never" />
+    <disable_collisions link1="panda_link2" link2="panda_link6" reason="Never" />
+    <disable_collisions link1="panda_link3" link2="panda_link4" reason="Adjacent" />
+    <disable_collisions link1="panda_link3" link2="panda_link5" reason="Never" />
+    <disable_collisions link1="panda_link3" link2="panda_link6" reason="Never" />
+    <disable_collisions link1="panda_link3" link2="panda_link7" reason="Never" />
+    <disable_collisions link1="panda_link4" link2="panda_link5" reason="Adjacent" />
+    <disable_collisions link1="panda_link4" link2="panda_link6" reason="Never" />
+    <disable_collisions link1="panda_link4" link2="panda_link7" reason="Never" />
+    <disable_collisions link1="panda_link5" link2="panda_link6" reason="Adjacent" />
+    <disable_collisions link1="panda_link6" link2="panda_link7" reason="Adjacent" />
+  </xacro:macro>
+</robot>
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/sensors_kinect_depthmap.yaml
+sensors:
+  - sensor_plugin: occupancy_map_monitor/DepthImageOctomapUpdater
+    image_topic: /camera/depth_registered/image_raw
+    queue_size: 5
+    near_clipping_plane_distance: 0.3
+    far_clipping_plane_distance: 5.0
+    shadow_threshold: 0.2
+    padding_scale: 4.0
+    padding_offset: 0.03
+    max_update_rate: 1.0
+    filtered_cloud_topic: filtered_cloud
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/initial_positions.yaml
+# Default initial positions for the panda arm's ros2_control fake system
+initial_positions:
+  panda_joint1: 0.0
+  panda_joint2: -0.785
+  panda_joint3: 0.0
+  panda_joint4: -2.356
+  panda_joint5: 0.0
+  panda_joint6: 1.571
+  panda_joint7: 0.785
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/config/sensors_kinect_pointcloud.yaml
+sensors:
+  - sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
+    point_cloud_topic: /camera/depth_registered/points
+    max_range: 5.0
+    point_subsample: 1
+    padding_offset: 0.1
+    padding_scale: 1.0
+    max_update_rate: 1.0
+    filtered_cloud_topic: filtered_cloud
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/launch/moveit.rviz
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded: ~
+      Splitter Ratio: 0.5
+    Tree Height: 281
+  - Class: rviz_common/Selection
+    Name: Selection
+  - Class: rviz_common/Tool Properties
+    Expanded:
+      - /2D Goal Pose1
+      - /Publish Point1
+    Name: Tool Properties
+    Splitter Ratio: 0.5886790156364441
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+  - Class: rviz_visual_tools/RvizVisualToolsGui
+    Name: RvizVisualToolsGui
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 10
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Topic:
+        Depth: 100
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /rviz_visual_tools
+      Value: true
+    - Class: moveit_rviz_plugin/Trajectory
+      Color Enabled: false
+      Enabled: true
+      Interrupt Display: false
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        panda_hand:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        panda_leftfinger:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        panda_link0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        panda_link1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        panda_link2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        panda_link3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        panda_link4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        panda_link5:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        panda_link6:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        panda_link7:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        panda_link8:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        panda_rightfinger:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Loop Animation: false
+      Name: Trajectory
+      Robot Alpha: 0.5
+      Robot Color: 150; 50; 150
+      Robot Description: robot_description
+      Show Robot Collision: false
+      Show Robot Visual: true
+      Show Trail: false
+      State Display Time: 0.05 s
+      Trail Step Size: 1
+      Trajectory Topic: /display_planned_path
+      Use Sim Time: false
+      Value: true
+    - Class: moveit_rviz_plugin/PlanningScene
+      Enabled: true
+      Move Group Namespace: ""
+      Name: PlanningScene
+      Planning Scene Topic: /monitored_planning_scene
+      Robot Description: robot_description
+      Scene Geometry:
+        Scene Alpha: 0.8999999761581421
+        Scene Color: 50; 230; 50
+        Scene Display Time: 0.009999999776482582
+        Show Scene Geometry: true
+        Voxel Coloring: Z-Axis
+        Voxel Rendering: Occupied Voxels
+      Scene Robot:
+        Attached Body Color: 150; 50; 150
+        Links:
+          All Links Enabled: true
+          Expand Joint Details: false
+          Expand Link Details: false
+          Expand Tree: false
+          Link Tree Style: Links in Alphabetic Order
+          panda_hand:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_leftfinger:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link0:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link1:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link2:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link3:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link4:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link5:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link6:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link7:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link8:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          panda_rightfinger:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+        Robot Alpha: 1
+        Show Robot Collision: false
+        Show Robot Visual: true
+      Value: true
+    - Acceleration_Scaling_Factor: 0.1
+      Class: moveit_rviz_plugin/MotionPlanning
+      Enabled: true
+      Move Group Namespace: ""
+      MoveIt_Allow_Approximate_IK: false
+      MoveIt_Allow_External_Program: false
+      MoveIt_Allow_Replanning: false
+      MoveIt_Allow_Sensor_Positioning: false
+      MoveIt_Planning_Attempts: 10
+      MoveIt_Planning_Time: 5
+      MoveIt_Use_Cartesian_Path: false
+      MoveIt_Use_Constraint_Aware_IK: false
+      MoveIt_Workspace:
+        Center:
+          X: 0
+          Y: 0
+          Z: 0
+        Size:
+          X: 2
+          Y: 2
+          Z: 2
+      Name: MotionPlanning
+      Planned Path:
+        Color Enabled: false
+        Interrupt Display: false
+        Links:
+          All Links Enabled: true
+          Expand Joint Details: false
+          Expand Link Details: false
+          Expand Tree: false
+          Link Tree Style: Links in Alphabetic Order
+          panda_hand:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_leftfinger:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link0:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link1:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link2:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link3:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link4:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link5:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link6:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link7:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link8:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          panda_rightfinger:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+        Loop Animation: false
+        Robot Alpha: 0.5
+        Robot Color: 150; 50; 150
+        Show Robot Collision: false
+        Show Robot Visual: true
+        Show Trail: false
+        State Display Time: 3x
+        Trail Step Size: 1
+        Trajectory Topic: /display_planned_path
+        Use Sim Time: false
+      Planning Metrics:
+        Payload: 1
+        Show Joint Torques: false
+        Show Manipulability: false
+        Show Manipulability Index: false
+        Show Weight Limit: false
+        TextHeight: 0.07999999821186066
+      Planning Request:
+        Colliding Link Color: 255; 0; 0
+        Goal State Alpha: 1
+        Goal State Color: 250; 128; 0
+        Interactive Marker Size: 0.25
+        Joint Violation Color: 255; 0; 255
+        Planning Group: panda_arm
+        Query Goal State: true
+        Query Start State: false
+        Show Workspace: false
+        Start State Alpha: 1
+        Start State Color: 0; 255; 0
+      Planning Scene Topic: /monitored_planning_scene
+      Robot Description: robot_description
+      Scene Geometry:
+        Scene Alpha: 0.8999999761581421
+        Scene Color: 50; 230; 50
+        Scene Display Time: 0.009999999776482582
+        Show Scene Geometry: true
+        Voxel Coloring: Z-Axis
+        Voxel Rendering: Occupied Voxels
+      Scene Robot:
+        Attached Body Color: 150; 50; 150
+        Links:
+          All Links Enabled: true
+          Expand Joint Details: false
+          Expand Link Details: false
+          Expand Tree: false
+          Link Tree Style: Links in Alphabetic Order
+          panda_hand:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_leftfinger:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link0:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link1:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link2:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link3:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link4:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link5:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link6:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link7:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          panda_link8:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          panda_rightfinger:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+        Robot Alpha: 1
+        Show Robot Collision: false
+        Show Robot Visual: true
+      Value: true
+      Velocity_Scaling_Factor: 0.1
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: panda_link0
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
+    - Class: rviz_default_plugins/SetInitialPose
+      Covariance x: 0.25
+      Covariance y: 0.25
+      Covariance yaw: 0.06853891909122467
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /initialpose
+    - Class: rviz_default_plugins/SetGoal
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /goal_pose
+    - Class: rviz_default_plugins/PublishPoint
+      Single click: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /clicked_point
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 2.718453884124756
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: -0.03982115536928177
+        Y: 0.10271645337343216
+        Z: 0.17354051768779755
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.5503982305526733
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz)
+      Yaw: 0.6603923439979553
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 1016
+  Hide Left Dock: false
+  Hide Right Dock: true
+  MotionPlanning:
+    collapsed: false
+  MotionPlanning - Trajectory Slider:
+    collapsed: false
+  QMainWindow State: 000000ff00000000fd0000000400000000000001f30000039efc020000000dfb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d000001a4000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000003c005400720061006a006500630074006f007200790020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000004100fffffffb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000004100fffffffb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e006701000001e7000001ad0000017d00fffffffb00000024005200760069007a00560069007300750061006c0054006f006f006c0073004700750069010000039a000000410000004100ffffff000000010000010f000003abfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003b000003ab000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004420000003efc0100000002fb0000000800540069006d00650100000000000004420000000000000000fb0000000800540069006d00650100000000000004500000000000000000000005410000039e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  RvizVisualToolsGui:
+    collapsed: false
+  Selection:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Trajectory - Trajectory Slider:
+    collapsed: false
+  Views:
+    collapsed: true
+  Width: 1850
+  X: 70
+  Y: 27
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/launch/gazebo_moveit.launch.py
+
+import os
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
+from launch.conditions import IfCondition
+from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+from ament_index_python.packages import get_package_share_directory
+from moveit_configs_utils import MoveItConfigsBuilder
+
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import SetEnvironmentVariable
+from launch.substitutions import EnvironmentVariable 
+
+
+def generate_launch_description():
+
+
+    models_dir = PathJoinSubstitution([FindPackageShare("moveit_resources_panda_description"), "models"])
+
+
+    set_gz_path = SetEnvironmentVariable(
+        name="GZ_SIM_RESOURCE_PATH",
+        value=[
+            EnvironmentVariable("GZ_SIM_RESOURCE_PATH", default_value=""),
+            os.pathsep,
+            models_dir,                              
+            os.pathsep,
+            FindPackageShare("moveit_resources_panda_description"),            # (optional) also add the package root
+        ],
+    )
+
+    # Mode switches
+    use_gz = PythonExpression(["'", LaunchConfiguration("ros2_control_hardware_type"), "' == 'gz'"])
+    use_fake = PythonExpression(["'", LaunchConfiguration("ros2_control_hardware_type"), "' != 'gz'"])
+
+    # --- CLI args ---
+    rviz_config_arg = DeclareLaunchArgument(
+        "rviz_config", default_value="moveit.rviz", description="RViz configuration file"
+    )
+    db_arg = DeclareLaunchArgument("db", default_value="False", description="Database flag")
+    ros2_control_hardware_type = DeclareLaunchArgument(
+        "ros2_control_hardware_type",
+        default_value="mock_components",
+        description="ROS 2 control hardware interface type -- [mock_components, gz]",
+    )
+
+    # --- MoveIt config ---
+    moveit_config = (
+        MoveItConfigsBuilder("moveit_resources_panda_moveit_config", package_name="moveit_resources_panda_moveit_config")
+        .robot_description(
+            file_path="config/panda.urdf.xacro",
+            mappings={"ros2_control_hardware_type": LaunchConfiguration("ros2_control_hardware_type")},
+        )
+        .robot_description_semantic(file_path="config/panda.srdf")
+        .planning_scene_monitor(publish_robot_description=True, publish_robot_description_semantic=True)
+        .trajectory_execution(file_path="config/moveit_controllers.yaml")
+        .planning_pipelines(pipelines=["ompl", "chomp", "pilz_industrial_motion_planner", "stomp"])
+        .to_moveit_configs()
+    )
+
+    # --- Nodes: MoveIt & RViz ---
+    move_group_node = Node(
+        package="moveit_ros_move_group",
+        executable="move_group",
+        output="screen",
+        parameters=[{"use_sim_time": True},moveit_config.to_dict()],
+        arguments=["--ros-args", "--log-level", "info"],
+    )
+
+    rviz_config = PathJoinSubstitution([FindPackageShare("moveit_resources_panda_moveit_config"), "launch", LaunchConfiguration("rviz_config")])
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="log",
+        arguments=["-d", rviz_config],
+        parameters=[
+            moveit_config.robot_description,
+            moveit_config.robot_description_semantic,
+            moveit_config.planning_pipelines,
+            moveit_config.robot_description_kinematics,
+            moveit_config.joint_limits,
+            {"use_sim_time": True},
+        ],
+    )
+
+    # # --- TF & state publisher ---
+    # static_tf_node = Node(
+    #     package="tf2_ros",
+    #     executable="static_transform_publisher",
+    #     name="static_transform_publisher",
+    #     output="log",
+    #     arguments=["0", "0", "0", "0", "0", "0", "world", "panda_link0"],
+    # )
+
+    robot_state_publisher = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        name="robot_state_publisher",
+        output="both",
+        parameters=[{"use_sim_time": True},moveit_config.robot_description],
+    )
+
+    # --- Common paths ---
+    ros2_controllers_path = os.path.join(
+        get_package_share_directory("moveit_resources_panda_moveit_config"), "config", "ros2_controllers.yaml"
+    )
+    world_path = PathJoinSubstitution([FindPackageShare("moveit_resources_panda_description"), "worlds", "empty.world"])
+
+    # ---------------------------
+    # Fake mode (no Gazebo)
+    # ---------------------------
+    ros2_control_node_fake = Node(
+        package="controller_manager",
+        executable="ros2_control_node",
+        parameters=[ros2_controllers_path],
+        remappings=[("/controller_manager/robot_description", "/robot_description")],
+        output="screen",
+        condition=IfCondition(use_fake),
+    )
+
+    joint_state_broadcaster_spawner_fake = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["joint_state_broadcaster", "-c", "/controller_manager", "--param-file", ros2_controllers_path],
+        condition=IfCondition(use_fake),
+    )
+    panda_arm_controller_spawner_fake = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["panda_arm_controller", "-c", "/controller_manager", "--param-file", ros2_controllers_path],
+        condition=IfCondition(use_fake),
+    )
+    panda_hand_controller_spawner_fake = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["panda_hand_controller", "-c", "/controller_manager", "--param-file", ros2_controllers_path],
+        condition=IfCondition(use_fake),
+    )
+
+    # ---------------------------
+    # Gazebo mode
+    # ---------------------------
+    gz_sim = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare("ros_gz_sim"), "launch", "gz_sim.launch.py"])
+        ),
+        launch_arguments={
+            "gz_args": ["-r ", world_path]  # <-- no str()
+        }.items(),
+        condition=IfCondition(use_gz),
+    )
+
+    clock_bridge = Node(
+    package="ros_gz_bridge",
+    executable="parameter_bridge",
+    name="gz_clock_bridge",
+    # Use your actual world name here instead of 'default' if different
+    arguments=["/world/empty/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"],
+    remappings=[("/world/empty/clock", "/clock")],
+    output="screen",
+    condition=IfCondition(use_gz),
+)
+
+    spawn_entity = Node(
+        package="ros_gz_sim",
+        executable="create",
+        arguments=["-name", "panda", "-topic", "/robot_description"],
+        output="screen",
+        condition=IfCondition(use_gz),
+    )
+
+    joint_state_broadcaster_spawner_gz = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "joint_state_broadcaster", "-c", "/controller_manager",
+            "--param-file", ros2_controllers_path
+        ],
+        condition=IfCondition(use_gz),
+    )
+
+    panda_arm_controller_spawner_gz = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "panda_arm_controller", "-c", "/controller_manager",
+            "--param-file", ros2_controllers_path
+        ],
+        condition=IfCondition(use_gz),
+    )
+
+    panda_hand_controller_spawner_gz = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "panda_hand_controller", "-c", "/controller_manager",
+            "--param-file", ros2_controllers_path
+        ],
+        condition=IfCondition(use_gz),
+    )
+
+    # --- Optional DB ---
+    db_config = LaunchConfiguration("db")
+    mongodb_server_node = Node(
+        package="warehouse_ros_mongo",
+        executable="mongo_wrapper_ros.py",
+        parameters=[
+            {"warehouse_port": 33829},
+            {"warehouse_host": "localhost"},
+            {"warehouse_plugin": "warehouse_ros_mongo::MongoDatabaseConnection"},
+        ],
+        output="screen",
+        condition=IfCondition(db_config),
+    )
+
+    return LaunchDescription(
+        [
+            rviz_config_arg,
+            db_arg,
+            ros2_control_hardware_type,
+            set_gz_path,
+            rviz_node,
+            #static_tf_node,
+            robot_state_publisher,
+            move_group_node,
+            # fake-mode chain
+            ros2_control_node_fake,
+            joint_state_broadcaster_spawner_fake,
+            panda_arm_controller_spawner_fake,
+            panda_hand_controller_spawner_fake,
+            # gazebo-mode chain
+            gz_sim,
+            clock_bridge,
+            spawn_entity,
+            joint_state_broadcaster_spawner_gz,
+            panda_arm_controller_spawner_gz,
+            panda_hand_controller_spawner_gz,
+            # optional db
+            mongodb_server_node,
+        ]
+    )
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/CMakeLists.txt
+cmake_minimum_required(VERSION 3.10.2)
+project(moveit_resources_panda_moveit_config)
+find_package(ament_cmake REQUIRED)
+
+ament_package()
+
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+install(FILES .setup_assistant DESTINATION share/${PROJECT_NAME})
+
+/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/package.xml
+<?xml version="1.0"?>
+<package format="3">
+  <name>moveit_resources_panda_moveit_config</name>
+  <version>3.1.1</version>
+  <description>
+    <p>
+      MoveIt Resources for testing: Franka Emika Panda
+    </p>
+    <p>
+      A project-internal configuration for testing in MoveIt.
+    </p>
+  </description>
+  <author email="mike@picknik.ai">Mike Lautman</author>
+  <maintainer email="mike@picknik.ai">Mike Lautman</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://moveit.ros.org/</url>
+  <url type="bugtracker">https://github.com/ros-planning/moveit_resources/issues</url>
+  <url type="repository">https://github.com/ros-planning/moveit_resources</url>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+
+  <exec_depend>gz_ros2_control</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <!-- optional if you use db:=True -->
+  <exec_depend>warehouse_ros_mongo</exec_depend>
+
+  <exec_depend>moveit_resources_panda_description</exec_depend>
+  <!-- disabled to remove circular dependencies
+  <exec_depend>moveit_ros_move_group</exec_depend>
+  <exec_depend>moveit_fake_controller_manager</exec_depend>
+  <exec_depend>moveit_kinematics</exec_depend>
+  <exec_depend>moveit_planners_ompl</exec_depend>
+  <exec_depend>moveit_ros_visualization</exec_depend>
+  -->
+  <exec_depend>ros2cli_common_extensions</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>position_controllers</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>topic_tools</exec_depend>
+  <!-- This package is referenced in the warehouse launch files, but does not build out of the box at the moment.
+       Commented the dependency until this works. -->
+  <!-- <exec_depend>warehouse_ros_mongo</exec_depend> -->
+
+  <export>
+      <build_type>ament_cmake</build_type>
+  </export>
+</package>
+
+/home/beast/ros2_ws/src/moveit_resources/panda_description/worlds/empty.world
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="empty">
+
+    <!-- Provide ROS init & clock inside gz sim -->
+   <!-- <plugin filename="libgz_ros_init-system.so"
+            name="ros_gz_sim::systems::RosInit"/>
+    <plugin filename="libgz_ros_clock-system.so"
+            name="ros_gz_sim::systems::RosClock"/>-->
+
+    <!-- Simple sun light (no Fuel) -->
+    <light name="sun" type="directional">
+      <cast_shadows>true</cast_shadows>
+      <direction>-0.5 0.5 -1.0</direction>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>0.1 0.1 0.1 1</specular>
+    </light>
+
+    <!-- Ground plane made from a primitive (no Fuel) -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  <include>
+    <uri>model://workpiece_box</uri>
+  </include>
+
+  </world>
+</sdf>
+/home/beast/ros2_ws/src/moveit_resources/panda_description/urdf/panda.urdf.xacro
+<?xml version="1.0" ?>
+<!-- =================================================================================== -->
+<!-- |    This document was autogenerated by xacro from /opt/ros/kinetic/share/moveit_resources/panda_description/urdf/panda.urdf | -->
+<!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
+<!-- =================================================================================== -->
+<robot name="panda" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <link name="world"/>
+    <joint name="world_to_base" type="fixed">
+        <parent link="world"/>
+        <child  link="panda_link0"/>
+    </joint>
+
+
+    <link name="panda_link0">
+        <visual>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/link0.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/link0.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="-0.041018 -0.00014 0.049974" rpy="0 0 0" />
+          <mass value="0.629769"/>
+          <inertia ixx="0.00315" iyy="0.00388" izz="0.004285" ixy="8.2904E-7" ixz="0.00015" iyz="8.2299E-6"/>
+        </inertial>
+    </link>
+    <link name="panda_link1">
+        <visual>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/link1.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/link1.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="0.003875 0.002081 -0.04762" rpy="0 0 0" />
+          <mass value="4.970684"/>
+          <inertia ixx="0.70337" iyy="0.70661" izz="0.009117" ixy="-0.000139" ixz="0.006772" iyz="0.019169"/>
+        </inertial>
+    </link>
+    <joint name="panda_joint1" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="0 0 0" xyz="0 0 0.333" />
+        <parent link="panda_link0" />
+        <child link="panda_link1" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-2.9671" upper="2.9671" velocity="2.3925" />
+        <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16" />
+    </joint>
+    <link name="panda_link2">
+        <visual>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/link2.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/link2.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="-0.003141 -0.02872  0.003495" rpy="0 0 0" />
+          <mass value="0.646926"/>
+          <inertia ixx="0.007962" iyy="2.811E-2" izz="2.5995E-2" ixy="-3.925E-3" ixz="1.0254E-2" iyz="7.04E-4"/>
+        </inertial>
+    </link>
+    <joint name="panda_joint2" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-1.7628" soft_upper_limit="1.7628" />
+        <origin rpy="-1.57079632679 0 0" xyz="0 0 0" />
+        <parent link="panda_link1" />
+        <child link="panda_link2" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-1.8326" upper="1.8326" velocity="2.3925" />
+        <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16" />
+    </joint>
+    <link name="panda_link3">
+        <visual>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/link3.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/link3.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="2.7518E-2 3.9252E-2 -6.6502E-2" rpy="0 0 0" />
+          <mass value="3.228604"/>
+          <inertia ixx="3.7242E-2" iyy="3.6155E-2" izz="1.083E-2" ixy="-4.761E-3" ixz="-1.1396E-2" iyz="-1.2805E-2"/>
+        </inertial>
+    </link>
+    <joint name="panda_joint3" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="1.57079632679 0 0" xyz="0 -0.316 0" />
+        <parent link="panda_link2" />
+        <child link="panda_link3" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-2.9671" upper="2.9671" velocity="2.3925" />
+        <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16" />
+    </joint>
+    <link name="panda_link4">
+        <visual>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/link4.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/link4.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="-5.317E-2 1.04419E-1 2.7454E-2" rpy="0 0 0" />
+          <mass value="3.587895"/>
+          <inertia ixx="2.5853E-2" iyy="1.9552E-2" izz="2.8323E-2" ixy="7.796E-3" ixz="-1.332E-3" iyz="8.641E-3"/>
+        </inertial>
+    </link>
+    <joint name="panda_joint4" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.0718" soft_upper_limit="0.0175" />
+        <origin rpy="1.57079632679 0 0" xyz="0.0825 0 0" />
+        <parent link="panda_link3" />
+        <child link="panda_link4" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-3.1416" upper="0.0873" velocity="2.3925" />
+        <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16" />
+    </joint>
+    <link name="panda_link5">
+        <visual>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/link5.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/link5.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="-1.1953E-2 4.1065E-2 -3.8437E-2" rpy="0 0 0" />
+          <mass value="1.225946"/>
+          <inertia ixx="3.5549E-2" iyy="2.9474E-2" izz="8.627E-3" ixy="-2.117E-3" ixz="-4.037E-3" iyz="2.29E-4"/>
+        </inertial>
+    </link>
+    <joint name="panda_joint5" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="-1.57079632679 0 0" xyz="-0.0825 0.384 0" />
+        <parent link="panda_link4" />
+        <child link="panda_link5" />
+        <axis xyz="0 0 1" />
+        <limit effort="12" lower="-2.9671" upper="2.9671" velocity="2.8710" />
+        <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16" />
+    </joint>
+    <link name="panda_link6">
+        <visual>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/link6.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/link6.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="6.0149E-2 -1.4117E-2 -1.0517E-2" rpy="0 0 0" />
+          <mass value="1.666555"/>
+          <inertia ixx="1.964E-3" iyy="4.354E-3" izz="5.433E-3" ixy="1.09E-4" ixz="-1.158E-3" iyz="3.41E-4"/>
+        </inertial>
+    </link>
+    <joint name="panda_joint6" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175" soft_upper_limit="3.7525" />
+        <origin rpy="1.57079632679 0 0" xyz="0 0 0" />
+        <parent link="panda_link5" />
+        <child link="panda_link6" />
+        <axis xyz="0 0 1" />
+        <limit effort="12" lower="-0.0873" upper="3.8223" velocity="2.8710" />
+        <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16" />
+    </joint>
+    <link name="panda_link7">
+        <visual>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/link7.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/link7.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="1.0517E-2 -4.252E-3 6.1597E-2" rpy="0 0 0" />
+          <mass value="7.35522E-1"/>
+          <inertia ixx="1.2516E-2" iyy="1.0027E-2" izz="4.815E-3" ixy="-4.28E-4" ixz="-1.19E-3" iyz="-7.41E-4"/>
+        </inertial>
+    </link>
+    <joint name="panda_joint7" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="1.57079632679 0 0" xyz="0.088 0 0" />
+        <parent link="panda_link6" />
+        <child link="panda_link7" />
+        <axis xyz="0 0 1" />
+        <limit effort="12" lower="-2.9671" upper="2.9671" velocity="2.8710" />
+        <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16" />
+    </joint>
+    <link name="panda_link8" />
+    <joint name="panda_joint8" type="fixed">
+        <origin rpy="0 0 0" xyz="0 0 0.107" />
+        <parent link="panda_link7" />
+        <child link="panda_link8" />
+        <axis xyz="0 0 0" />
+    </joint>
+    <joint name="panda_hand_joint" type="fixed">
+        <parent link="panda_link8" />
+        <child link="panda_hand" />
+        <origin rpy="0 0 -0.785398163397" xyz="0 0 0" />
+    </joint>
+    <link name="panda_hand">
+        <visual>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/hand.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/hand.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="-0.01 0 0.03" rpy="0 0 0" />
+          <mass value="0.73"/>
+          <inertia ixx="0.001" iyy="0.0025" izz="0.0017" ixy="0" ixz="0" iyz="0"/>
+        </inertial>
+    </link>
+    <link name="panda_leftfinger">
+        <visual>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/finger.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/finger.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <mass value="0.015"/>
+          <inertia ixx="2.375E-6" iyy="2.375E-6" izz="7.5E-7" ixy="0" ixz="0" iyz="0"/>
+        </inertial>
+    </link>
+    <link name="panda_rightfinger">
+        <visual>
+            <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/visual/finger.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="file://$(find moveit_resources_panda_description)/meshes/collision/finger.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <mass value="0.15"/>
+          <inertia ixx="2.375E-6" iyy="2.375E-6" izz="7.5E-7" ixy="0" ixz="0" iyz="0"/>
+        </inertial>
+    </link>
+    <joint name="panda_finger_joint1" type="prismatic">
+        <parent link="panda_hand" />
+        <child link="panda_leftfinger" />
+        <origin rpy="0 0 0" xyz="0 0 0.0584" />
+        <axis xyz="0 1 0" />
+        <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
+        <dynamics damping="0.3" />
+    </joint>
+    <joint name="panda_finger_joint2" type="prismatic">
+        <parent link="panda_hand" />
+        <child link="panda_rightfinger" />
+        <origin rpy="0 0 0" xyz="0 0 0.0584" />
+        <axis xyz="0 -1 0" />
+        <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
+        <!-- <mimic joint="panda_finger_joint1" /> -->
+        <dynamics damping="0.3" />
+    </joint>
+</robot>
+
+/home/beast/ros2_ws/src/moveit_resources/panda_description/urdf/panda.urdf
+<?xml version="1.0" ?>
+<!-- =================================================================================== -->
+<!-- |    This document was autogenerated by xacro from /opt/ros/kinetic/share/moveit_resources/panda_description/urdf/panda.urdf | -->
+<!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
+<!-- =================================================================================== -->
+<robot name="panda" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <link name="panda_link0">
+        <visual>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/link0.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/link0.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="panda_link1">
+        <visual>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/link1.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/link1.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="panda_joint1" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="0 0 0" xyz="0 0 0.333" />
+        <parent link="panda_link0" />
+        <child link="panda_link1" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-2.9671" upper="2.9671" velocity="2.3925" />
+    </joint>
+    <link name="panda_link2">
+        <visual>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/link2.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/link2.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="panda_joint2" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-1.7628" soft_upper_limit="1.7628" />
+        <origin rpy="-1.57079632679 0 0" xyz="0 0 0" />
+        <parent link="panda_link1" />
+        <child link="panda_link2" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-1.8326" upper="1.8326" velocity="2.3925" />
+    </joint>
+    <link name="panda_link3">
+        <visual>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/link3.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/link3.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="panda_joint3" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="1.57079632679 0 0" xyz="0 -0.316 0" />
+        <parent link="panda_link2" />
+        <child link="panda_link3" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-2.9671" upper="2.9671" velocity="2.3925" />
+    </joint>
+    <link name="panda_link4">
+        <visual>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/link4.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/link4.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="panda_joint4" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.0718" soft_upper_limit="0.0175" />
+        <origin rpy="1.57079632679 0 0" xyz="0.0825 0 0" />
+        <parent link="panda_link3" />
+        <child link="panda_link4" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-3.1416" upper="0.0873" velocity="2.3925" />
+    </joint>
+    <link name="panda_link5">
+        <visual>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/link5.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/link5.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="panda_joint5" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="-1.57079632679 0 0" xyz="-0.0825 0.384 0" />
+        <parent link="panda_link4" />
+        <child link="panda_link5" />
+        <axis xyz="0 0 1" />
+        <limit effort="12" lower="-2.9671" upper="2.9671" velocity="2.8710" />
+    </joint>
+    <link name="panda_link6">
+        <visual>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/link6.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/link6.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="panda_joint6" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175" soft_upper_limit="3.7525" />
+        <origin rpy="1.57079632679 0 0" xyz="0 0 0" />
+        <parent link="panda_link5" />
+        <child link="panda_link6" />
+        <axis xyz="0 0 1" />
+        <limit effort="12" lower="-0.0873" upper="3.8223" velocity="2.8710" />
+    </joint>
+    <link name="panda_link7">
+        <visual>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/link7.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/link7.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="panda_joint7" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="1.57079632679 0 0" xyz="0.088 0 0" />
+        <parent link="panda_link6" />
+        <child link="panda_link7" />
+        <axis xyz="0 0 1" />
+        <limit effort="12" lower="-2.9671" upper="2.9671" velocity="2.8710" />
+    </joint>
+    <link name="panda_link8" />
+    <joint name="panda_joint8" type="fixed">
+        <origin rpy="0 0 0" xyz="0 0 0.107" />
+        <parent link="panda_link7" />
+        <child link="panda_link8" />
+        <axis xyz="0 0 0" />
+    </joint>
+    <joint name="panda_hand_joint" type="fixed">
+        <parent link="panda_link8" />
+        <child link="panda_hand" />
+        <origin rpy="0 0 -0.785398163397" xyz="0 0 0" />
+    </joint>
+    <link name="panda_hand">
+        <visual>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/hand.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/hand.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="panda_leftfinger">
+        <visual>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/finger.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/finger.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="panda_rightfinger">
+        <visual>
+            <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/visual/finger.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://moveit_resources_panda_description/meshes/collision/finger.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="panda_finger_joint1" type="prismatic">
+        <parent link="panda_hand" />
+        <child link="panda_leftfinger" />
+        <origin rpy="0 0 0" xyz="0 0 0.0584" />
+        <axis xyz="0 1 0" />
+        <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
+    </joint>
+    <joint name="panda_finger_joint2" type="prismatic">
+        <parent link="panda_hand" />
+        <child link="panda_rightfinger" />
+        <origin rpy="0 0 0" xyz="0 0 0.0584" />
+        <axis xyz="0 -1 0" />
+        <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
+        <mimic joint="panda_finger_joint1" />
+    </joint>
+</robot>
+
+/home/beast/ros2_ws/src/moveit_resources/panda_description/models/workpiece_box/model.sdf
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="workpiece_box">
+    <static>false</static>
+    <!-- spawn a bit above the floor; adjust as you like -->
+    <pose>0.5 0 0.6 0 0 0</pose>
+
+    <link name="link">
+      <!-- Simple inertia; close enough for grasp testing -->
+      <inertial>
+        <mass>1.2</mass>
+        <inertia>
+          <!-- approx for 0.20x0.20x0.10 box (+ small notch) -->
+          <ixx>0.0048</ixx>
+          <iyy>0.0048</iyy>
+          <izz>0.0072</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <!-- MAIN BOX (200x200x100 mm) -->
+      <collision name="box_collision">
+        <!-- centered at the link frame -->
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.20 0.20 0.10</size></box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+            </ode>
+          </friction>
+          <contact>
+            <ode><kp>1e5</kp><kd>1.0</kd></ode>
+          </contact>
+        </surface>
+      </collision>
+
+      <visual name="box_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.20 0.20 0.10</size></box>
+        </geometry>
+        <material>
+          <ambient>0.2 0.4 0.8 1</ambient>
+          <diffuse>0.2 0.4 0.8 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- TOP NOTCH / PEG (30x50x60 mm) -->
+      <!-- Sits on the center of the top face. 
+           The top face of the box is at z=+0.05, so we place the notch 
+           so its base is exactly on that face: half notch height is 0.03 -> center at 0.05+0.03 = 0.08 -->
+      <collision name="notch_collision">
+        <pose>0 0 0.08 0 0 0</pose>
+        <geometry>
+          <box><size>0.03 0.05 0.06</size></box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <!-- Make the notch “grippy” for the fingers -->
+              <mu>2.0</mu>
+              <mu2>2.0</mu2>
+            </ode>
+          </friction>
+          <contact>
+            <ode><kp>1e5</kp><kd>1.0</kd></ode>
+          </contact>
+        </surface>
+      </collision>
+
+      <visual name="notch_visual">
+        <pose>0 0 0.08 0 0 0</pose>
+        <geometry>
+          <box><size>0.03 0.05 0.06</size></box>
+        </geometry>
+        <material>
+          <ambient>0.1 0.1 0.1 1</ambient>
+          <diffuse>0.12 0.12 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
+/home/beast/ros2_ws/src/moveit_resources/panda_description/models/workpiece_box/model.config
+<?xml version="1.0"?>
+<model>
+  <name>workpiece_box</name>
+  <version>1.0</version>
+  <sdf version="1.7">model.sdf</sdf>
+  <author><name>you</name></author>
+</model>
+/home/beast/ros2_ws/src/moveit_resources/panda_description/CMakeLists.txt
+cmake_minimum_required(VERSION 3.10.2)
+project(moveit_resources_panda_description)
+find_package(ament_cmake REQUIRED)
+
+ament_package()
+
+install(DIRECTORY meshes urdf DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY worlds models DESTINATION share/${PROJECT_NAME})
+
+/home/beast/ros2_ws/src/moveit_resources/panda_description/package.xml
+<?xml version="1.0"?>
+<package format="3">
+  <name>moveit_resources_panda_description</name>
+  <version>3.1.1</version>
+  <description>panda Resources used for MoveIt testing</description>
+
+  <author email="isucan@willowgarage.edu">Ioan Sucan</author>
+  <author email="acorn@willowgarage.edu">Acorn Pooley</author>
+
+  <maintainer email="dave@dav.ee">Dave Coleman</maintainer>
+
+  <license>BSD</license>
+  <url type="website">http://moveit.ros.org</url>
+  <url type="bugtracker">https://github.com/ros-planning/moveit-resources/issues</url>
+  <url type="repository">https://github.com/ros-planning/moveit-resources</url>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <export>
+      <build_type>ament_cmake</build_type>
+  </export>
+</package>
+

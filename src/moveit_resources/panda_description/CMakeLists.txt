@@ -5,3 +5,4 @@ find_package(ament_cmake REQUIRED)
 ament_package()
 
 install(DIRECTORY meshes urdf DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY worlds models DESTINATION share/${PROJECT_NAME})
