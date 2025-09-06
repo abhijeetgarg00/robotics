@@ -1,0 +1,7 @@
+cd ~/ros2_ws/src/moveit_resources
+ros2 pkg create panda_move_it_dev --build-type ament_cmake \
+  --dependencies rclcpp geometry_msgs moveit_ros_planning_interface
+
+mkdir -p panda_move_it_dev/src
+mv ~/ros2_ws/src/moveit_resources/panda_moveit_config/src/panda_move_example.cpp \
+   ~/ros2_ws/src/moveit_resources/panda_move_it_dev/src/
