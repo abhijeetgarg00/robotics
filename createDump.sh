@@ -1,4 +1,4 @@
-find /home/beast/ros2_ws/src/moveit_resources/panda_moveit_config \
+find /home/beast/ros2_ws/src/moveit_resources \
   -path "/home/beast/ros2_ws/src/moveit_resources/panda_description/meshes" -prune -o \
   -path "/home/beast/ros2_ws/src/moveit_resources/panda_moveit_config/launch/demo.launch.py" -prune -o \
   -type f -print | while read file; do

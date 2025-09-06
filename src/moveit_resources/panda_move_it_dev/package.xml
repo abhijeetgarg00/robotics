@@ -7,8 +7,12 @@
   <license>BSD</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Build + Run deps -->
   <depend>rclcpp</depend>
   <depend>geometry_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
   <depend>moveit_ros_planning_interface</depend>
 
   <export>
