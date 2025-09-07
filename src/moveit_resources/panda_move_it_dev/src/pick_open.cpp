@@ -53,7 +53,7 @@ int main(int argc, char **argv)
   pick_pose.header.frame_id = "panda_link0";
   pick_pose.pose.position.x = tf_box.transform.translation.x;
   pick_pose.pose.position.y = tf_box.transform.translation.y;
-  pick_pose.pose.position.z = tf_box.transform.translation.z + 15;  // 10 cm above
+  pick_pose.pose.position.z = tf_box.transform.translation.z + 0.17;
   pick_pose.pose.orientation = tf2::toMsg(q);
 
   // --- Move arm ---
@@ -76,6 +76,16 @@ int main(int argc, char **argv)
   } else {
     RCLCPP_ERROR(node->get_logger(), "Gripper open failed");
   }
+
+
+  // --- Open gripper ---
+  hand.setNamedTarget("close");
+  if (hand.move() == moveit::core::MoveItErrorCode::SUCCESS) {
+    RCLCPP_INFO(node->get_logger(), "Gripper close ✔");
+  } else {
+    RCLCPP_ERROR(node->get_logger(), "Gripper open close");
+  }
+
 
   rclcpp::shutdown();
   spinner.join();
