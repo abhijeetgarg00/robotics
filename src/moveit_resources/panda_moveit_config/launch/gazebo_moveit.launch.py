@@ -163,7 +163,7 @@ def generate_launch_description():
     remappings=[("/world/empty/clock", "/clock")],
     output="screen",
     condition=IfCondition(use_gz),
-)
+    )
 
     spawn_entity = Node(
         package="ros_gz_sim",

@@ -1,0 +1,1 @@
+gz topic -e -t /world/empty/pose/info | grep -A20 "name: \"workpiece_box\""
