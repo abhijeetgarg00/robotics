@@ -17,7 +17,6 @@ ament_target_dependencies(panda_move_example
   geometry_msgs
   moveit_ros_planning_interface
 )
-
 install(TARGETS panda_move_example
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
@@ -45,6 +44,20 @@ target_link_libraries(gz_model_tf_broadcaster
   ${Protobuf_LIBRARIES}
 )
 install(TARGETS gz_model_tf_broadcaster
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+# NEW: addCollision
+add_executable(addCollision src/addCollision.cpp)
+ament_target_dependencies(addCollision
+  rclcpp
+  geometry_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  moveit_ros_planning_interface
+)
+install(TARGETS addCollision
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
