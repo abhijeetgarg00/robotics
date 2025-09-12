@@ -11,6 +11,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include <algorithm>
 #include <thread>
@@ -37,6 +38,7 @@ int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
   auto node = rclcpp::Node::make_shared("add_collision_sync");
+
 
   // Executor for callbacks (TF, etc.)
   rclcpp::executors::SingleThreadedExecutor exec;
@@ -75,6 +77,8 @@ int main(int argc, char** argv)
   bool first_publish = true;
   bool running = true;
 
+  auto tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(node);
+
   // Main loop
   while (rclcpp::ok() && running)
   {
@@ -95,6 +99,17 @@ int main(int argc, char** argv)
       co.operation = moveit_msgs::msg::CollisionObject::ADD;
 
       psi.applyCollisionObject(co);
+
+      // NEW: publish TF for notch so mover can read its yaw
+      geometry_msgs::msg::TransformStamped notch_tf;
+      notch_tf.header.stamp = node->now();
+      notch_tf.header.frame_id = world_frame;
+      notch_tf.child_frame_id  = "workpiece_notch";
+      notch_tf.transform.translation.x = wp_notch.position.x;
+      notch_tf.transform.translation.y = wp_notch.position.y;
+      notch_tf.transform.translation.z = wp_notch.position.z;
+      notch_tf.transform.rotation      = wp_notch.orientation;
+      tf_broadcaster->sendTransform(notch_tf);
 
       if (first_publish) {
         RCLCPP_INFO(node->get_logger(),

@@ -61,6 +61,20 @@ install(TARGETS addCollision
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
+add_executable(completeMove src/completeMove.cpp)
+ament_target_dependencies(completeMove
+  rclcpp
+  geometry_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  moveit_ros_planning_interface
+)
+install(TARGETS completeMove
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+
 # Install the launch files if you want them available
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
